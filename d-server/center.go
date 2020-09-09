@@ -8,8 +8,10 @@ import (
 
 // 中心
 type Center struct {
+	// 客户端id[客户端对象指针]
 	clientMap map[ClientId]*Client
-	roomMap   map[RoomId]BaseRoom
+	// 房间id[具体房间指针]
+	roomMap map[RoomId]BaseRoom
 	// 消息channel
 	messageChan chan ServerMessage
 	funcMap     map[MessageType]CenterMessageFunc
@@ -20,6 +22,7 @@ type Center struct {
 func (c *Center) run() {
 	for {
 		select {
+		// 消息监听
 		case cMsg := <-c.messageChan:
 			if cFunc, ok := c.funcMap[cMsg.messageType]; ok {
 				go cFunc(cMsg)
@@ -28,7 +31,9 @@ func (c *Center) run() {
 	}
 }
 
+// 创建大厅
 func newCenter() *Center {
+	// 创建大厅实体
 	center := &Center{
 		clientMap:   make(map[ClientId]*Client),
 		roomMap:     make(map[RoomId]BaseRoom),
@@ -37,13 +42,21 @@ func newCenter() *Center {
 		lastRoomId:  RoomId(0),
 	}
 
+	// 客户端连接
 	center.funcMap[ClientRegister] = center.clientRegister
+	// 客户端断开连接
 	center.funcMap[ClientUnregister] = center.clientUnregister
 
+	// 退出房间
 	center.funcMap[RoomQuit] = center.roomQuit
+	// 解散房间
 	center.funcMap[RoomDisband] = center.roomDisband
+	// 创建房间
 	center.funcMap[RoomCreate] = center.roomCreate
+	// 加入房间
 	center.funcMap[RoomJoin] = center.roomJoin
+
+	// 大厅运行监听客户端消息
 	go center.run()
 	return center
 }
@@ -71,13 +84,16 @@ func (c *Center) clientUnregister(msg ServerMessage) {
 func (c *Center) roomStart(room BaseRoom) {
 	defer func() {
 		close(room.MessageChan())
+		// 从大厅的roomMap移除room
 		delete(c.roomMap, room.RoomId())
 		log.Printf("房间[%d]完成解散", room.RoomId())
 	}()
 	for {
 		select {
+		// 监听房间消息
 		case msg := <-room.MessageChan():
 			if msg.messageType == RoomClose {
+				// 关闭房间
 				go room.Stop()
 				return
 			}
@@ -97,37 +113,53 @@ func (c *Center) roomCreate(msg ServerMessage) {
 	}
 	room := newDdzRoom(msg.client, c)
 	// Room Message
+	// 在这里添加是因为可以使用具体实现room的方法
 	room.FuncMap()[RoomReady] = room.Ready
 	room.FuncMap()[RoomCancelReady] = room.CancelReady
 	room.FuncMap()[RoomGameMessage] = room.GameMessage
 
+	// 大厅roomMap添加新的room
 	c.roomMap[room.RoomId()] = room
+	// 房间clientMap添加client
 	room.ClientMap()[msg.client.id] = msg.client
+	// client当前房间更新
 	msg.client.currentRoom = room
+	// 执行加入房间
 	go room.Join(msg.client)
+	// 房间运行
 	go c.roomStart(room)
+	// 广播房间创建 (其实只有创建者看到)
 	room.BroadcastL(fmt.Sprint(room.RoomId()), RoomCreate, CenterLevel)
 	log.Printf("房间创建[%d]", room.RoomId())
 }
 
 func (c *Center) roomJoin(msg ServerMessage) {
+	// 转化为数字roomId
 	roomId, err := strconv.ParseUint(msg.message, 10, 32)
 	if err == nil {
+		// roomId有效
 		if room, ok := c.roomMap[RoomId(roomId)]; ok {
+			// 获取当前消息的client
 			client := msg.client
+			// 检查client是否在当前room内
 			if _, ok := room.ClientMap()[client.id]; ok {
 				msg.client.messageChan <- ClientMessage{CenterLevel, RoomAlreadyIn, false, ""}
 				log.Printf("已在房间[%d]内", room.RoomId())
 				return
 			}
+			// 检查当前room下client是否已满
 			if room.RoomSize() <= uint(len(room.ClientMap())) {
 				msg.client.messageChan <- ClientMessage{CenterLevel, RoomFull, false, ""}
 				log.Printf("房间[%d]人员已满", room.RoomId())
 				return
 			}
+			// client关联至房间
 			room.ClientMap()[client.id] = client
+			// client当前房间更新
 			client.currentRoom = room
+			// 执行加入房间
 			go room.Join(client)
+			// 广播有新client加入房间
 			room.BroadcastM(client.userName, RoomJoin)
 			log.Printf("用户[%s]加入房间[%d]", client.userName, room.RoomId())
 			var userNames []string

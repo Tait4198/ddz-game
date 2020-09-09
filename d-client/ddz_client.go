@@ -64,6 +64,14 @@ func NewDdzClient(usr, pwd string) *DdzClient {
 	dc.mFuncMap[RoomAlreadyIn] = dc.RoomAlreadyIn
 	dc.mFuncMap[RoomFull] = dc.RoomFull
 	dc.mFuncMap[RoomUnableExit] = dc.RoomUnableExit
+	dc.mFuncMap[RoomRun] = dc.RoomRun
+	dc.mFuncMap[RoomClose] = dc.RoomClose
+
+	dc.mFuncMap[GameStart] = dc.GameStart
+	dc.mFuncMap[GameRestart] = dc.GameRestart
+	dc.mFuncMap[GameCountdown] = dc.GameCountdown
+	dc.mFuncMap[GameNextUserOps] = dc.GameNextUserOps
+	dc.mFuncMap[GameWaitGrabLandlord] = dc.GameWaitGrabLandlord
 	return dc
 }
 
@@ -82,6 +90,7 @@ func (dc *DdzClient) Run() {
 	dc.conn = c
 	defer dc.conn.Close()
 
+	// 服务端消息监听
 	go func() {
 		for {
 			_, message, err := c.ReadMessage()
@@ -98,11 +107,13 @@ func (dc *DdzClient) Run() {
 			if mFunc, ok := dc.mFuncMap[cm.Type]; ok {
 				go mFunc(cm)
 			} else {
+				// 如果未找到处理方法直接输出
 				log.Printf("recv: %s", string(message))
 			}
 		}
 	}()
 
+	// 输入监听
 	reader := bufio.NewReader(os.Stdin)
 	for {
 		text, err := reader.ReadString('\n')

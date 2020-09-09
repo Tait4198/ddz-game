@@ -3,7 +3,11 @@ package main
 import "fmt"
 
 func (dc *DdzClient) GameNewLandlord(cm ClientMessage) {
-	dc.ShowMessage(cm.Level, fmt.Sprintf("当前地主[%s]", cm.Message))
+	if cm.Message != "" {
+		dc.ShowMessage(cm.Level, fmt.Sprintf("当前地主[%s]", cm.Message))
+	} else {
+		dc.ShowMessage(cm.Level, "未选出地主")
+	}
 }
 
 func (dc *DdzClient) RoomCreate(cm ClientMessage) {
@@ -28,12 +32,16 @@ func (dc *DdzClient) RoomMissUser(cm ClientMessage) {
 
 func (dc *DdzClient) RoomReady(cm ClientMessage) {
 	dc.ShowMessage(cm.Level, fmt.Sprintf("用户[%s]已准备", cm.Message))
-	dc.isReady = true
+	if cm.Message == dc.userName {
+		dc.isReady = true
+	}
 }
 
 func (dc *DdzClient) RoomCancelReady(cm ClientMessage) {
 	dc.ShowMessage(cm.Level, fmt.Sprintf("用户[%s]取消准备", cm.Message))
-	dc.isReady = false
+	if cm.Message == dc.userName {
+		dc.isReady = true
+	}
 }
 
 func (dc *DdzClient) RoomSomeoneQuit(cm ClientMessage) {
@@ -62,4 +70,32 @@ func (dc *DdzClient) RoomUnableExit(cm ClientMessage) {
 
 func (dc *DdzClient) RoomRun(cm ClientMessage) {
 	dc.ShowMessage(cm.Level, "对局开始")
+}
+
+func (dc *DdzClient) RoomClose(cm ClientMessage) {
+	dc.ShowMessage(cm.Level, "房间关闭")
+}
+
+func (dc *DdzClient) GameStart(cm ClientMessage) {
+	dc.ShowMessage(cm.Level, "游戏开始")
+}
+
+func (dc *DdzClient) GameRestart(cm ClientMessage) {
+	dc.ShowMessage(cm.Level, "游戏重新开始")
+}
+
+func (dc *DdzClient) GameCountdown(cm ClientMessage) {
+	dc.ShowMessage(cm.Level, fmt.Sprintf("操作时间还剩%s秒", cm.Message))
+}
+
+func (dc *DdzClient) GameNextUserOps(cm ClientMessage) {
+	if cm.Message == "0" {
+		dc.ShowMessage(cm.Level, "操作时间用尽")
+	} else {
+		dc.ShowMessage(cm.Level, fmt.Sprintf("轮到[%s]操作", cm.Message))
+	}
+}
+
+func (dc *DdzClient) GameWaitGrabLandlord(cm ClientMessage) {
+	dc.ShowMessage(cm.Level, "是否抢地主?")
 }

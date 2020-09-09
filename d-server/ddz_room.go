@@ -213,7 +213,12 @@ func (r *DdzRoom) GameGrabLandlord(msg DdzRoomMessage) {
 
 func (r *DdzRoom) GameStart(reRl bool) {
 	log.Printf("房间[%d]对局开始", r.RoomId())
-	r.BroadcastL("", GameStart, GameLevel)
+	// 重新关联代表着新game开始
+	if reRl {
+		r.BroadcastL("", GameStart, GameLevel)
+	} else {
+		r.BroadcastL("", GameRestart, GameLevel)
+	}
 	r.ddzStart = true
 	r.waitUserOps = false
 	r.roundClient = nil

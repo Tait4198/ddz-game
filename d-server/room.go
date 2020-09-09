@@ -124,6 +124,7 @@ func (r *Room) Ready(msg RoomMessage) {
 
 }
 
+// client取消准备
 func (r *Room) CancelReady(msg RoomMessage) {
 	c := msg.client
 	if !r.roomReady {
@@ -133,10 +134,12 @@ func (r *Room) CancelReady(msg RoomMessage) {
 	}
 }
 
+// room对局是否正在进行
 func (r *Room) IsRun() bool {
 	return r.roomReady
 }
 
+// client准备
 func (r *Room) ResetReady() {
 	r.roomReady = false
 	for id := range r.clientReadyMap {

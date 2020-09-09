@@ -45,7 +45,9 @@ func newClient(userName string, id ClientId, center *Center, conn *websocket.Con
 		messageChan: make(chan ClientMessage),
 	}
 	client.center.messageChan <- ServerMessage{messageType: ClientRegister, client: client}
+	// 客户端写任务
 	go client.readPump()
+	// 客户端读任务
 	go client.writePump()
 	return client
 }
@@ -62,6 +64,7 @@ func (c *Client) readPump() {
 		return nil
 	})
 	for {
+		// 监听消息
 		_, message, err := c.conn.ReadMessage()
 		if err != nil {
 			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
@@ -70,8 +73,10 @@ func (c *Client) readPump() {
 			break
 		}
 		var rMessage ReceiveMessage
+		// 转换为实体对象
 		err = json.Unmarshal(message, &rMessage)
 		if err == nil {
+			// 根据消息级别发送至center/room
 			switch rMessage.Level {
 			case CenterLevel:
 				c.center.messageChan <- ServerMessage{message: rMessage.Message, messageType: rMessage.Type, client: c}
@@ -94,6 +99,7 @@ func (c *Client) writePump() {
 	}()
 	for {
 		select {
+		// 监听客户端消息通道
 		case message, ok := <-c.messageChan:
 			if !ok {
 				c.conn.WriteMessage(websocket.CloseMessage, []byte{})
@@ -101,6 +107,7 @@ func (c *Client) writePump() {
 			}
 			c.conn.WriteJSON(message)
 		case <-ticker.C:
+			// 心跳检查
 			c.conn.SetWriteDeadline(time.Now().Add(writeWait))
 			if err := c.conn.WriteMessage(websocket.PingMessage, nil); err != nil {
 				return
