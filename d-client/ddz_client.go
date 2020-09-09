@@ -60,6 +60,10 @@ func NewDdzClient(usr, pwd string) *DdzClient {
 	dc.mFuncMap[RoomMissUser] = dc.RoomMissUser
 	dc.mFuncMap[RoomNewHomeowner] = dc.RoomNewHomeowner
 	dc.mFuncMap[GameNewLandlord] = dc.GameNewLandlord
+	dc.mFuncMap[RoomUnableCreate] = dc.RoomUnableCreate
+	dc.mFuncMap[RoomAlreadyIn] = dc.RoomAlreadyIn
+	dc.mFuncMap[RoomFull] = dc.RoomFull
+	dc.mFuncMap[RoomUnableExit] = dc.RoomUnableExit
 	return dc
 }
 

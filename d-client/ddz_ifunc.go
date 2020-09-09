@@ -33,7 +33,5 @@ func (dc *DdzClient) ReadyOrCancelRoom(val string) {
 	err := dc.conn.WriteJSON(SendMessage{RoomLevel, sendType, val})
 	if err != nil {
 		log.Fatal("ReadyRoom error:", err)
-	} else {
-		dc.isReady = !dc.isReady
 	}
 }
