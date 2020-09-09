@@ -3,7 +3,6 @@ package main
 import (
 	"bufio"
 	"encoding/json"
-	"fmt"
 	"github.com/gorilla/websocket"
 	"log"
 	"net/url"
@@ -20,6 +19,7 @@ type DdzClient struct {
 	iFuncMap map[string]InstructionFunc
 
 	landlord string
+	isReady  bool
 }
 
 func (*DdzClient) ShowMessage(level, message string) {
@@ -42,54 +42,25 @@ func NewDdzClient(usr, pwd string) *DdzClient {
 	}
 	// 房间创建
 	dc.iFuncMap["c"] = dc.CreateRoom
+	// 退出房间
 	dc.iFuncMap["q"] = dc.QuitRoom
+	// 加入房间
 	dc.iFuncMap["j"] = dc.JoinRoom
+	// 准备或取消准备
+	dc.iFuncMap["r"] = dc.ReadyOrCancelRoom
 
 	// 消息监听
 	dc.mFuncMap[RoomCreate] = dc.RoomCreate
 	dc.mFuncMap[RoomJoin] = dc.RoomJoin
+	dc.mFuncMap[RoomInvalid] = dc.RoomInvalid
+	dc.mFuncMap[RoomQuit] = dc.RoomQuit
+	dc.mFuncMap[RoomReady] = dc.RoomReady
+	dc.mFuncMap[RoomCancelReady] = dc.RoomCancelReady
+	dc.mFuncMap[RoomSomeoneQuit] = dc.RoomSomeoneQuit
+	dc.mFuncMap[RoomMissUser] = dc.RoomMissUser
+	dc.mFuncMap[RoomNewHomeowner] = dc.RoomNewHomeowner
 	dc.mFuncMap[GameNewLandlord] = dc.GameNewLandlord
 	return dc
-}
-
-func (dc *DdzClient) CreateRoom(val string) {
-	err := dc.conn.WriteJSON(SendMessage{CenterLevel, RoomCreate, val})
-	if err != nil {
-		log.Fatal("CreateRoom error:", err)
-	}
-}
-
-func (dc *DdzClient) JoinRoom(val string) {
-	err := dc.conn.WriteJSON(SendMessage{CenterLevel, RoomJoin, val})
-	if err != nil {
-		log.Fatal("JoinRoom error:", err)
-	}
-}
-
-func (dc *DdzClient) QuitRoom(val string) {
-	err := dc.conn.WriteJSON(SendMessage{CenterLevel, RoomQuit, val})
-	if err != nil {
-		log.Fatal("QuitRoom error:", err)
-	}
-}
-
-func (dc *DdzClient) GameNewLandlord(cm ClientMessage) {
-	if cm.Status {
-		dc.ShowMessage(cm.Level, fmt.Sprintf("当前地主[%s]", cm.Message))
-	}
-}
-
-func (dc *DdzClient) RoomCreate(cm ClientMessage) {
-	if cm.Status {
-		dc.ShowMessage(cm.Level, fmt.Sprintf("房间[%s]已创建", cm.Message))
-	}
-}
-
-func (dc *DdzClient) RoomJoin(cm ClientMessage) {
-	if cm.Status {
-		dc.ShowMessage(cm.Level, fmt.Sprintf("用户[%s]加入房间", cm.Message))
-		// 可做额外操作
-	}
 }
 
 func (dc *DdzClient) Run() {
@@ -122,8 +93,9 @@ func (dc *DdzClient) Run() {
 			}
 			if mFunc, ok := dc.mFuncMap[cm.Type]; ok {
 				go mFunc(cm)
+			} else {
+				log.Printf("recv: %s", string(message))
 			}
-			log.Printf("recv: %s", string(message))
 		}
 	}()
 

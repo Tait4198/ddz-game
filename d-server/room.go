@@ -59,7 +59,7 @@ func (r *Room) Homeowner() *Client {
 
 func (r *Room) UpdateHomeowner(client *Client) {
 	r.homeowner = client
-	r.BroadcastL(client.userName, RoomNewHomeowner, CenterLevel)
+	r.BroadcastL(client.userName, RoomNewHomeowner, RoomLevel)
 }
 
 func (r *Room) FuncMap() map[MessageType]RoomMessageFunc {

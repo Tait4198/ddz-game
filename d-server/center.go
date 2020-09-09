@@ -152,14 +152,14 @@ func (c *Center) roomQuit(msg ServerMessage) {
 		// 执行room退出操作
 		go client.currentRoom.Quit(client)
 		// 发送退出room信息
-		client.messageChan <- ClientMessage{CenterLevel, RoomQuit, true, ""}
+		client.messageChan <- ClientMessage{RoomLevel, RoomQuit, true, ""}
 		// room成员为0
 		if len(client.currentRoom.ClientMap()) == 0 {
 			// 发送解散房间
 			c.messageChan <- ServerMessage{messageType: RoomDisband, room: client.currentRoom}
 		} else {
 			// 向room内其他client广播退出信息
-			client.currentRoom.BroadcastL(client.userName, RoomSomeoneQuit, CenterLevel)
+			client.currentRoom.BroadcastL(client.userName, RoomSomeoneQuit, RoomLevel)
 			// 退出client为房主
 			if client == client.currentRoom.Homeowner() {
 				// 从room内其他client选择新房主
