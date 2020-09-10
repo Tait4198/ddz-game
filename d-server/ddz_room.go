@@ -53,6 +53,7 @@ const (
 	GameInvalidOps                      = 2004
 	GameOpsTimeout                      = 2005
 	GameNextUserOps                     = 2006
+	GameExe                             = 2010
 	GameDealPoker                       = 2100
 	GameGrabLandlord                    = 2101
 	GameNGrabLandlord                   = 2102
@@ -117,6 +118,7 @@ func newDdzRoom(client *Client, center *Center) BaseRoom {
 	ddzRoom.UpdateHomeowner(client)
 	// ddz实现
 	ddzRoom.iFuncMap[GameGrabLandlord] = ddzRoom.GameGrabLandlord
+	ddzRoom.iFuncMap[GameExe] = ddzRoom.GameExe
 
 	// 阶段方法
 	ddzRoom.stageFuncMap[0] = stageGrab
@@ -124,7 +126,7 @@ func newDdzRoom(client *Client, center *Center) BaseRoom {
 	return ddzRoom
 }
 
-func (r *DdzRoom) GameExe() {
+func (r *DdzRoom) GameExe(msg DdzRoomMessage) {
 	if !r.ddzStart {
 		r.GameStart(true)
 	}
@@ -206,7 +208,7 @@ func (r *DdzRoom) GameGrabLandlord(msg DdzRoomMessage) {
 		r.landlord = r.lastGrab
 		r.roundClient = r.lastGrab
 		r.stageIndex += 1
-		r.BroadcastL("", GameGrabLandlordEnd, GameLevel)
+		r.BroadcastL(r.landlord.userName, GameGrabLandlordEnd, GameLevel)
 		log.Printf("地主用户[%s]", r.landlord.userName)
 	}
 }
@@ -353,6 +355,14 @@ func (r *DdzRoom) Run() {
 		r.GameEnd()
 		ticker.Stop()
 	}()
+	go func() {
+		for {
+			select {
+			case <-ticker.C:
+				r.iMessageChan <- DdzRoomMessage{MessageType: GameExe}
+			}
+		}
+	}()
 	for {
 		select {
 		case msg := <-r.iMessageChan:
@@ -361,9 +371,9 @@ func (r *DdzRoom) Run() {
 			}
 			if cFunc, ok := r.iFuncMap[msg.MessageType]; ok {
 				cFunc(msg)
+			} else {
+				log.Printf("无效消息消息[%d]", msg.MessageType)
 			}
-		case <-ticker.C:
-			r.GameExe()
 		}
 	}
 }

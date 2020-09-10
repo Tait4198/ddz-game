@@ -1,6 +1,9 @@
 package main
 
-import "log"
+import (
+	"fmt"
+	"log"
+)
 
 func (dc *DdzClient) CreateRoom(val string) {
 	err := dc.conn.WriteJSON(SendMessage{CenterLevel, RoomCreate, val})
@@ -33,5 +36,31 @@ func (dc *DdzClient) ReadyOrCancelRoom(val string) {
 	err := dc.conn.WriteJSON(SendMessage{RoomLevel, sendType, val})
 	if err != nil {
 		log.Fatal("ReadyRoom error:", err)
+	}
+}
+
+func (dc *DdzClient) YesCommand(val string) {
+	switch dc.stage {
+	case StageGrabLandlord:
+		GrabLandlord(dc, true)
+	default:
+		log.Println("还未轮到操作")
+	}
+}
+
+func (dc *DdzClient) NoCommand(val string) {
+	switch dc.stage {
+	case StageGrabLandlord:
+		GrabLandlord(dc, false)
+	default:
+		log.Println("还未轮到操作")
+	}
+}
+
+func GrabLandlord(dc *DdzClient, val bool) {
+	gm := GameMessage{fmt.Sprint(val), GameGrabLandlord}
+	err := dc.conn.WriteJSON(SendMessage{RoomLevel, RoomGameMessage, StructToJsonString(gm)})
+	if err != nil {
+		log.Fatal("GrabLandlord error:", err)
 	}
 }

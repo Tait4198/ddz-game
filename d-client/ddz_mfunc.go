@@ -85,17 +85,36 @@ func (dc *DdzClient) GameRestart(cm ClientMessage) {
 }
 
 func (dc *DdzClient) GameCountdown(cm ClientMessage) {
-	dc.ShowMessage(cm.Level, fmt.Sprintf("操作时间还剩%s秒", cm.Message))
-}
-
-func (dc *DdzClient) GameNextUserOps(cm ClientMessage) {
 	if cm.Message == "0" {
 		dc.ShowMessage(cm.Level, "操作时间用尽")
 	} else {
-		dc.ShowMessage(cm.Level, fmt.Sprintf("轮到[%s]操作", cm.Message))
+		dc.ShowMessage(cm.Level, fmt.Sprintf("操作时间还剩%s秒", cm.Message))
 	}
 }
 
+func (dc *DdzClient) GameNextUserOps(cm ClientMessage) {
+	dc.ShowMessage(cm.Level, fmt.Sprintf("轮到[%s]操作", cm.Message))
+	dc.roundUser = cm.Message
+}
+
 func (dc *DdzClient) GameWaitGrabLandlord(cm ClientMessage) {
-	dc.ShowMessage(cm.Level, "是否抢地主?")
+	dc.ShowMessage(cm.Level, "是否抢地主 (y/n)")
+	dc.stage = StageGrabLandlord
+}
+
+func (dc *DdzClient) GameGrabHostingOps(cm ClientMessage) {
+	dc.ShowMessage(cm.Level, "托管操作不抢地主")
+}
+
+func (dc *DdzClient) GameGrabLandlord(cm ClientMessage) {
+	dc.ShowMessage(cm.Level, fmt.Sprintf("用户[%s]抢地主", cm.Message))
+}
+
+func (dc *DdzClient) GameNGrabLandlord(cm ClientMessage) {
+	dc.ShowMessage(cm.Level, fmt.Sprintf("用户[%s]不抢地主", cm.Message))
+}
+
+func (dc *DdzClient) GameGrabLandlordEnd(cm ClientMessage) {
+	dc.ShowMessage(cm.Level, fmt.Sprintf("地主用户[%s]", cm.Message))
+	dc.landlord = cm.Message
 }

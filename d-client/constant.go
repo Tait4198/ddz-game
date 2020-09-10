@@ -8,6 +8,10 @@ const (
 )
 
 const (
+	StageGrabLandlord GameStage = 1 //抢地主阶段
+)
+
+const (
 	ClientRegister   MessageType = 1000
 	ClientUnregister             = 1001
 	RoomCreate                   = 1100
@@ -37,6 +41,7 @@ const (
 	GameInvalidOps                   = 2004
 	GameOpsTimeout                   = 2005
 	GameNextUserOps                  = 2006
+	GameExe                          = 2010
 	GameDealPoker                    = 2100
 	GameGrabLandlord                 = 2101
 	GameNGrabLandlord                = 2102

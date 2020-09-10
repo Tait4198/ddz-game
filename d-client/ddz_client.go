@@ -16,10 +16,12 @@ type DdzClient struct {
 	userName string
 	password string
 	mFuncMap map[MessageType]MessageFunc
-	iFuncMap map[string]InstructionFunc
+	iFuncMap map[string]CommandFunc
 
-	landlord string
-	isReady  bool
+	landlord  string
+	roundUser string
+	isReady   bool
+	stage     GameStage
 }
 
 func (*DdzClient) ShowMessage(level, message string) {
@@ -38,7 +40,7 @@ func NewDdzClient(usr, pwd string) *DdzClient {
 		userName: usr,
 		password: pwd,
 		mFuncMap: make(map[MessageType]MessageFunc),
-		iFuncMap: make(map[string]InstructionFunc),
+		iFuncMap: make(map[string]CommandFunc),
 	}
 	// 房间创建
 	dc.iFuncMap["c"] = dc.CreateRoom
@@ -48,6 +50,10 @@ func NewDdzClient(usr, pwd string) *DdzClient {
 	dc.iFuncMap["j"] = dc.JoinRoom
 	// 准备或取消准备
 	dc.iFuncMap["r"] = dc.ReadyOrCancelRoom
+	// 准备或取消准备
+	dc.iFuncMap["y"] = dc.YesCommand
+	// 准备或取消准备
+	dc.iFuncMap["n"] = dc.NoCommand
 
 	// 消息监听
 	dc.mFuncMap[RoomCreate] = dc.RoomCreate
@@ -72,6 +78,10 @@ func NewDdzClient(usr, pwd string) *DdzClient {
 	dc.mFuncMap[GameCountdown] = dc.GameCountdown
 	dc.mFuncMap[GameNextUserOps] = dc.GameNextUserOps
 	dc.mFuncMap[GameWaitGrabLandlord] = dc.GameWaitGrabLandlord
+	dc.mFuncMap[GameGrabHostingOps] = dc.GameGrabHostingOps
+	dc.mFuncMap[GameGrabLandlord] = dc.GameGrabLandlord
+	dc.mFuncMap[GameNGrabLandlord] = dc.GameNGrabLandlord
+	dc.mFuncMap[GameGrabLandlordEnd] = dc.GameGrabLandlordEnd
 	return dc
 }
 
@@ -134,6 +144,8 @@ func (dc *DdzClient) Run() {
 			} else {
 				iFunc("")
 			}
+		} else {
+			log.Println("无效命令")
 		}
 	}
 }

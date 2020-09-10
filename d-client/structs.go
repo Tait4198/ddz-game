@@ -5,7 +5,10 @@ type MessageType uint
 
 type MessageFunc func(ClientMessage)
 
-type InstructionFunc func(string)
+type CommandFunc func(string)
+
+// 游戏阶段
+type GameStage uint
 
 // 客户端发出消息
 type ClientMessage struct {
@@ -20,4 +23,9 @@ type SendMessage struct {
 	Level   string      `json:"level"`
 	Type    MessageType `json:"type"`
 	Message string      `json:"message"`
+}
+
+type GameMessage struct {
+	Message     string      `json:"message"`
+	MessageType MessageType `json:"type"`
 }
