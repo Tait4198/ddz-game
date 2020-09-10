@@ -1,4 +1,4 @@
-package main
+package d_common
 
 const (
 	CenterLevel MessageLevel = "center"

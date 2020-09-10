@@ -1,17 +1,19 @@
 package main
 
+import cm "com.github/gc-common"
+
 type BaseRoom interface {
 	RoomId() RoomId
 	MessageChan() chan RoomMessage
 	ClientMap() map[ClientId]*Client
 	RoomSize() uint
-	Broadcast(MessageType)
-	BroadcastM(string, MessageType)
-	BroadcastL(string, MessageType, MessageLevel)
+	Broadcast(cm.MessageType)
+	BroadcastM(string, cm.MessageType)
+	BroadcastL(string, cm.MessageType, cm.MessageLevel)
 	RemoveClient(ClientId)
 	Homeowner() *Client
 	UpdateHomeowner(*Client)
-	FuncMap() map[MessageType]RoomMessageFunc
+	FuncMap() map[cm.MessageType]RoomMessageFunc
 	Start(RoomMessage)
 	Stop()
 	Quit(*Client)

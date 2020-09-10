@@ -1,7 +1,6 @@
 package main
 
-// 用于指定调用方法
-type MessageType uint
+import cm "com.github/gc-common"
 
 type MessageFunc func(ClientMessage)
 
@@ -12,20 +11,20 @@ type GameStage uint
 
 // 客户端发出消息
 type ClientMessage struct {
-	Level   string      `json:"level"`
-	Type    MessageType `json:"type"`
-	Status  bool        `json:"status"`
-	Message string      `json:"message"`
+	Level   cm.MessageLevel `json:"level"`
+	Type    cm.MessageType  `json:"type"`
+	Status  bool            `json:"status"`
+	Message string          `json:"message"`
 }
 
 // 服务端接收消息
 type SendMessage struct {
-	Level   string      `json:"level"`
-	Type    MessageType `json:"type"`
-	Message string      `json:"message"`
+	Level   cm.MessageLevel `json:"level"`
+	Type    cm.MessageType  `json:"type"`
+	Message string          `json:"message"`
 }
 
 type GameMessage struct {
-	Message     string      `json:"message"`
-	MessageType MessageType `json:"type"`
+	Message     string            `json:"message"`
+	MessageType cm.DdzMessageType `json:"type"`
 }

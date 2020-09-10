@@ -1,6 +1,7 @@
 package main
 
 import (
+	cm "com.github/gc-common"
 	"encoding/json"
 	"fmt"
 	"github.com/gorilla/websocket"
@@ -44,7 +45,7 @@ func newClient(userName string, id ClientId, center *Center, conn *websocket.Con
 		center:      center,
 		messageChan: make(chan ClientMessage),
 	}
-	client.center.messageChan <- ServerMessage{messageType: ClientRegister, client: client}
+	client.center.messageChan <- ServerMessage{messageType: cm.ClientRegister, client: client}
 	// 客户端写任务
 	go client.readPump()
 	// 客户端读任务
@@ -54,7 +55,7 @@ func newClient(userName string, id ClientId, center *Center, conn *websocket.Con
 
 func (c *Client) readPump() {
 	defer func() {
-		c.center.messageChan <- ServerMessage{messageType: ClientUnregister, client: c}
+		c.center.messageChan <- ServerMessage{messageType: cm.ClientUnregister, client: c}
 		c.conn.Close()
 	}()
 	c.conn.SetReadLimit(maxMessageSize)
@@ -78,9 +79,9 @@ func (c *Client) readPump() {
 		if err == nil {
 			// 根据消息级别发送至center/room
 			switch rMessage.Level {
-			case CenterLevel:
+			case cm.CenterLevel:
 				c.center.messageChan <- ServerMessage{message: rMessage.Message, messageType: rMessage.Type, client: c}
-			case RoomLevel:
+			case cm.RoomLevel:
 				if c.currentRoom != nil {
 					c.currentRoom.MessageChan() <- RoomMessage{message: rMessage.Message, messageType: rMessage.Type, client: c}
 				}

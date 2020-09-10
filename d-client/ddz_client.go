@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	cm "com.github/gc-common"
 	"encoding/json"
 	"github.com/gorilla/websocket"
 	"log"
@@ -15,7 +16,7 @@ type DdzClient struct {
 	conn     *websocket.Conn
 	userName string
 	password string
-	mFuncMap map[MessageType]MessageFunc
+	mFuncMap map[cm.MessageType]MessageFunc
 	iFuncMap map[string]CommandFunc
 
 	landlord  string
@@ -24,13 +25,13 @@ type DdzClient struct {
 	stage     GameStage
 }
 
-func (*DdzClient) ShowMessage(level, message string) {
+func (*DdzClient) ShowMessage(level cm.MessageLevel, message string) {
 	switch level {
-	case CenterLevel:
+	case cm.CenterLevel:
 		log.Printf("[大厅消息]%s", message)
-	case RoomLevel:
+	case cm.RoomLevel:
 		log.Printf("[房间消息]%s", message)
-	case GameLevel:
+	case cm.GameLevel:
 		log.Printf("[游戏消息]%s", message)
 	}
 }
@@ -39,7 +40,7 @@ func NewDdzClient(usr, pwd string) *DdzClient {
 	dc := &DdzClient{
 		userName: usr,
 		password: pwd,
-		mFuncMap: make(map[MessageType]MessageFunc),
+		mFuncMap: make(map[cm.MessageType]MessageFunc),
 		iFuncMap: make(map[string]CommandFunc),
 	}
 	// 房间创建
@@ -56,32 +57,32 @@ func NewDdzClient(usr, pwd string) *DdzClient {
 	dc.iFuncMap["n"] = dc.NoCommand
 
 	// 消息监听
-	dc.mFuncMap[RoomCreate] = dc.RoomCreate
-	dc.mFuncMap[RoomJoin] = dc.RoomJoin
-	dc.mFuncMap[RoomInvalid] = dc.RoomInvalid
-	dc.mFuncMap[RoomQuit] = dc.RoomQuit
-	dc.mFuncMap[RoomReady] = dc.RoomReady
-	dc.mFuncMap[RoomCancelReady] = dc.RoomCancelReady
-	dc.mFuncMap[RoomSomeoneQuit] = dc.RoomSomeoneQuit
-	dc.mFuncMap[RoomMissUser] = dc.RoomMissUser
-	dc.mFuncMap[RoomNewHomeowner] = dc.RoomNewHomeowner
-	dc.mFuncMap[GameNewLandlord] = dc.GameNewLandlord
-	dc.mFuncMap[RoomUnableCreate] = dc.RoomUnableCreate
-	dc.mFuncMap[RoomAlreadyIn] = dc.RoomAlreadyIn
-	dc.mFuncMap[RoomFull] = dc.RoomFull
-	dc.mFuncMap[RoomUnableExit] = dc.RoomUnableExit
-	dc.mFuncMap[RoomRun] = dc.RoomRun
-	dc.mFuncMap[RoomClose] = dc.RoomClose
+	dc.mFuncMap[cm.RoomCreate] = dc.RoomCreate
+	dc.mFuncMap[cm.RoomJoin] = dc.RoomJoin
+	dc.mFuncMap[cm.RoomInvalid] = dc.RoomInvalid
+	dc.mFuncMap[cm.RoomQuit] = dc.RoomQuit
+	dc.mFuncMap[cm.RoomReady] = dc.RoomReady
+	dc.mFuncMap[cm.RoomCancelReady] = dc.RoomCancelReady
+	dc.mFuncMap[cm.RoomSomeoneQuit] = dc.RoomSomeoneQuit
+	dc.mFuncMap[cm.RoomMissUser] = dc.RoomMissUser
+	dc.mFuncMap[cm.RoomNewHomeowner] = dc.RoomNewHomeowner
+	dc.mFuncMap[cm.GameNewLandlord] = dc.GameNewLandlord
+	dc.mFuncMap[cm.RoomUnableCreate] = dc.RoomUnableCreate
+	dc.mFuncMap[cm.RoomAlreadyIn] = dc.RoomAlreadyIn
+	dc.mFuncMap[cm.RoomFull] = dc.RoomFull
+	dc.mFuncMap[cm.RoomUnableExit] = dc.RoomUnableExit
+	dc.mFuncMap[cm.RoomRun] = dc.RoomRun
+	dc.mFuncMap[cm.RoomClose] = dc.RoomClose
 
-	dc.mFuncMap[GameStart] = dc.GameStart
-	dc.mFuncMap[GameRestart] = dc.GameRestart
-	dc.mFuncMap[GameCountdown] = dc.GameCountdown
-	dc.mFuncMap[GameNextUserOps] = dc.GameNextUserOps
-	dc.mFuncMap[GameWaitGrabLandlord] = dc.GameWaitGrabLandlord
-	dc.mFuncMap[GameGrabHostingOps] = dc.GameGrabHostingOps
-	dc.mFuncMap[GameGrabLandlord] = dc.GameGrabLandlord
-	dc.mFuncMap[GameNGrabLandlord] = dc.GameNGrabLandlord
-	dc.mFuncMap[GameGrabLandlordEnd] = dc.GameGrabLandlordEnd
+	dc.mFuncMap[cm.GameStart] = dc.GameStart
+	dc.mFuncMap[cm.GameRestart] = dc.GameRestart
+	dc.mFuncMap[cm.GameCountdown] = dc.GameCountdown
+	dc.mFuncMap[cm.GameNextUserOps] = dc.GameNextUserOps
+	dc.mFuncMap[cm.GameWaitGrabLandlord] = dc.GameWaitGrabLandlord
+	dc.mFuncMap[cm.GameGrabHostingOps] = dc.GameGrabHostingOps
+	dc.mFuncMap[cm.GameGrabLandlord] = dc.GameGrabLandlord
+	dc.mFuncMap[cm.GameNGrabLandlord] = dc.GameNGrabLandlord
+	dc.mFuncMap[cm.GameGrabLandlordEnd] = dc.GameGrabLandlordEnd
 	return dc
 }
 

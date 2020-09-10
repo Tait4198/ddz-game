@@ -1,9 +1,20 @@
-package main
+package d_common
 
 import (
+	"encoding/json"
+	"log"
 	"math/rand"
 	"time"
 )
+
+func StructToJsonString(obj interface{}) string {
+	jBytes, err := json.Marshal(obj)
+	if err != nil {
+		log.Println("marshal error")
+		return ""
+	}
+	return string(jBytes)
+}
 
 func SliceIndex(limit int, predicate func(i int) bool) int {
 	for i := 0; i < limit; i++ {

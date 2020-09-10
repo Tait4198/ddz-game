@@ -1,6 +1,7 @@
 package main
 
 import (
+	cm "com.github/gc-common"
 	"log"
 )
 
@@ -11,7 +12,7 @@ type Room struct {
 	clientMap   map[ClientId]*Client
 	messageChan chan RoomMessage
 	center      *Center
-	funcMap     map[MessageType]RoomMessageFunc
+	funcMap     map[cm.MessageType]RoomMessageFunc
 
 	roomReady      bool
 	clientReadyMap map[ClientId]bool
@@ -33,15 +34,15 @@ func (r *Room) RoomSize() uint {
 	return 1
 }
 
-func (r *Room) Broadcast(msgType MessageType) {
-	r.BroadcastL("", msgType, RoomLevel)
+func (r *Room) Broadcast(msgType cm.MessageType) {
+	r.BroadcastL("", msgType, cm.RoomLevel)
 }
 
-func (r *Room) BroadcastM(msg string, msgType MessageType) {
-	r.BroadcastL(msg, msgType, RoomLevel)
+func (r *Room) BroadcastM(msg string, msgType cm.MessageType) {
+	r.BroadcastL(msg, msgType, cm.RoomLevel)
 }
 
-func (r *Room) BroadcastL(msg string, msgType MessageType, level MessageLevel) {
+func (r *Room) BroadcastL(msg string, msgType cm.MessageType, level cm.MessageLevel) {
 	for _, client := range r.clientMap {
 		client.messageChan <- ClientMessage{level, msgType, true, msg}
 	}
@@ -59,10 +60,10 @@ func (r *Room) Homeowner() *Client {
 
 func (r *Room) UpdateHomeowner(client *Client) {
 	r.homeowner = client
-	r.BroadcastL(client.userName, RoomNewHomeowner, RoomLevel)
+	r.BroadcastL(client.userName, cm.RoomNewHomeowner, cm.RoomLevel)
 }
 
-func (r *Room) FuncMap() map[MessageType]RoomMessageFunc {
+func (r *Room) FuncMap() map[cm.MessageType]RoomMessageFunc {
 	return r.funcMap
 }
 
@@ -107,18 +108,18 @@ func (r *Room) Ready(msg RoomMessage) {
 			r.clientReadyMap[c.id] = true
 			r.roomReady = true
 			// 广播对局开始
-			r.Broadcast(RoomRun)
+			r.Broadcast(cm.RoomRun)
 			log.Printf("房间[%d]对局运行\n", r.id)
 			// 对局开始
 			// 使用客户端所在到具体实现room进行开局
 			c.currentRoom.Run()
 		} else {
 			log.Println("还存在未准备用户或缺少用户")
-			c.messageChan <- ClientMessage{RoomLevel, RoomMissUser, false, ""}
+			c.messageChan <- ClientMessage{cm.RoomLevel, cm.RoomMissUser, false, ""}
 		}
 	} else {
 		r.clientReadyMap[c.id] = true
-		r.BroadcastM(c.userName, RoomReady)
+		r.BroadcastM(c.userName, cm.RoomReady)
 		log.Printf("房间[%d]用户[%s]准备\n", r.id, c.userName)
 	}
 
@@ -129,7 +130,7 @@ func (r *Room) CancelReady(msg RoomMessage) {
 	c := msg.client
 	if !r.roomReady {
 		r.clientReadyMap[c.id] = false
-		r.BroadcastM(c.userName, RoomCancelReady)
+		r.BroadcastM(c.userName, cm.RoomCancelReady)
 		log.Printf("房间[%d]用户[%s]取消准备\n", r.id, c.userName)
 	}
 }
@@ -153,7 +154,7 @@ func newRoom(center *Center) BaseRoom {
 		clientMap:      make(map[ClientId]*Client),
 		messageChan:    make(chan RoomMessage),
 		center:         center,
-		funcMap:        make(map[MessageType]RoomMessageFunc),
+		funcMap:        make(map[cm.MessageType]RoomMessageFunc),
 		roomReady:      false,
 		clientReadyMap: make(map[ClientId]bool),
 	}

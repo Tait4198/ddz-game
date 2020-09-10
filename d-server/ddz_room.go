@@ -1,6 +1,7 @@
 package main
 
 import (
+	cm "com.github/gc-common"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -10,59 +11,28 @@ import (
 	"time"
 )
 
-type DdzMessageType uint
-
 type DdzStageFunc func(bool, *DdzRoom)
 
 type DdzRoomMessageFunc func(DdzRoomMessage)
 
 type DdzRoomMessage struct {
 	client      *DdzClient
-	Message     string         `json:"message"`
-	MessageType DdzMessageType `json:"type"`
+	Message     string            `json:"message"`
+	MessageType cm.DdzMessageType `json:"type"`
 }
 
 type DdzClient struct {
 	*Client
 	Prev       *DdzClient
 	Next       *DdzClient
-	PokerSlice []Poker
+	PokerSlice []cm.Poker
 }
 
 func (c *DdzClient) NextClient() *DdzClient {
-	c.currentRoom.BroadcastL(c.Next.userName, GameNextUserOps, GameLevel)
+	c.currentRoom.BroadcastL(c.Next.userName, cm.GameNextUserOps, cm.GameLevel)
 	log.Printf("轮到[%s]操作", c.Next.userName)
 	return c.Next
 }
-
-type Poker struct {
-	Suit  string
-	Level string
-	Score uint
-}
-
-func (p *Poker) String() string {
-	return fmt.Sprintf("%s-%s", p.Level, p.Suit)
-}
-
-const (
-	GameStop             DdzMessageType = 2000
-	GameStart                           = 2001
-	GameRestart                         = 2002
-	GameCountdown                       = 2003
-	GameInvalidOps                      = 2004
-	GameOpsTimeout                      = 2005
-	GameNextUserOps                     = 2006
-	GameExe                             = 2010
-	GameDealPoker                       = 2100
-	GameGrabLandlord                    = 2101
-	GameNGrabLandlord                   = 2102
-	GameGrabLandlordEnd                 = 2103
-	GameGrabHostingOps                  = 2104
-	GameNoGrabLandlord                  = 2105
-	GameNewLandlord                     = 2105
-	GameWaitGrabLandlord                = 2106
-)
 
 // 回合时间
 const RoundTimeVal = 20
@@ -73,7 +43,7 @@ const JokerSuitStr = "r|b"
 
 type DdzRoom struct {
 	BaseRoom
-	iFuncMap     map[DdzMessageType]DdzRoomMessageFunc
+	iFuncMap     map[cm.DdzMessageType]DdzRoomMessageFunc
 	iMessageChan chan DdzRoomMessage
 	ddzStart     bool
 	stageFuncMap map[uint]DdzStageFunc
@@ -87,7 +57,7 @@ type DdzRoom struct {
 	// 阶段计数
 	stageIndex uint
 
-	holePokers []Poker
+	holePokers []cm.Poker
 
 	// 最后抢地主client
 	lastGrab *DdzClient
@@ -112,13 +82,13 @@ func newDdzClient(client *Client) *DdzClient {
 func newDdzRoom(client *Client, center *Center) BaseRoom {
 	ddzRoom := &DdzRoom{
 		BaseRoom:     newRoom(center),
-		iFuncMap:     make(map[DdzMessageType]DdzRoomMessageFunc),
+		iFuncMap:     make(map[cm.DdzMessageType]DdzRoomMessageFunc),
 		stageFuncMap: make(map[uint]DdzStageFunc),
 	}
 	ddzRoom.UpdateHomeowner(client)
 	// ddz实现
-	ddzRoom.iFuncMap[GameGrabLandlord] = ddzRoom.GameGrabLandlord
-	ddzRoom.iFuncMap[GameExe] = ddzRoom.GameExe
+	ddzRoom.iFuncMap[cm.GameGrabLandlord] = ddzRoom.GameGrabLandlord
+	ddzRoom.iFuncMap[cm.GameExe] = ddzRoom.GameExe
 
 	// 阶段方法
 	ddzRoom.stageFuncMap[0] = stageGrab
@@ -133,12 +103,12 @@ func (r *DdzRoom) GameExe(msg DdzRoomMessage) {
 	if r.roundTime > 0 {
 		r.roundTime -= 1
 		if r.roundTime%10 == 0 {
-			r.roundClient.messageChan <- ClientMessage{GameLevel, MessageType(GameCountdown),
+			r.roundClient.messageChan <- ClientMessage{cm.GameLevel, cm.MessageType(cm.GameCountdown),
 				true, fmt.Sprint(r.roundTime / 2)}
-			log.Printf("用户[%s]还剩 %d秒 操作时间", r.roundClient.userName, r.roundTime/2)
+			log.Printf("用户[%s]还剩%d秒操作时间", r.roundClient.userName, r.roundTime/2)
 		}
 	} else {
-		r.roundClient.messageChan <- ClientMessage{GameLevel, MessageType(GameOpsTimeout),
+		r.roundClient.messageChan <- ClientMessage{cm.GameLevel, cm.MessageType(cm.GameOpsTimeout),
 			true, ""}
 		log.Printf("用户[%s]操作超时", r.roundClient.userName)
 	}
@@ -152,8 +122,8 @@ func (r *DdzRoom) GameExe(msg DdzRoomMessage) {
 func stageGrab(auto bool, r *DdzRoom) {
 	if auto {
 		log.Printf("用户[%s]不抢地主(托管操作)", r.roundClient.userName)
-		r.BroadcastL("", GameGrabHostingOps, GameLevel)
-		r.GameGrabLandlord(DdzRoomMessage{r.roundClient, "false", GameGrabLandlord})
+		r.BroadcastL("", cm.GameGrabHostingOps, cm.GameLevel)
+		r.GameGrabLandlord(DdzRoomMessage{r.roundClient, "false", cm.GameGrabLandlord})
 	}
 	if r.grabIndex < 4 {
 		if r.roundClient == nil {
@@ -161,8 +131,8 @@ func stageGrab(auto bool, r *DdzRoom) {
 		} else {
 			r.roundClient = r.roundClient.NextClient()
 		}
-		log.Printf("等待用户 [%s] 抢地主", r.roundClient.userName)
-		r.roundClient.messageChan <- ClientMessage{GameLevel, GameWaitGrabLandlord, true, ""}
+		log.Printf("等待用户[%s]抢地主", r.roundClient.userName)
+		r.roundClient.messageChan <- ClientMessage{cm.GameLevel, cm.GameWaitGrabLandlord, true, ""}
 		r.waitUserOps = true
 		r.roundTime = RoundTimeVal
 	}
@@ -171,8 +141,10 @@ func stageGrab(auto bool, r *DdzRoom) {
 func stagePlay(auto bool, r *DdzRoom) {
 	if r.gameRound == 0 {
 		r.roundClient = r.landlord
+		r.BroadcastL(r.roundClient.userName, cm.GameNextUserOps, cm.GameLevel)
+		log.Printf("地主[%s]准备出牌", r.roundClient.userName)
 	}
-	r.roundClient.messageChan <- ClientMessage{GameLevel, 0, true, "准备出牌"}
+	r.roundClient.messageChan <- ClientMessage{cm.GameLevel, 0, true, "准备出牌"}
 	r.roundClient = r.roundClient.NextClient()
 	r.waitUserOps = true
 	r.roundTime = RoundTimeVal
@@ -184,7 +156,7 @@ func (r *DdzRoom) GameGrabLandlord(msg DdzRoomMessage) {
 	if e == nil && b {
 		r.lastGrab = r.roundClient
 		log.Printf("用户[%s]抢地主", r.lastGrab.userName)
-		r.BroadcastL(r.lastGrab.userName, GameGrabLandlord, GameLevel)
+		r.BroadcastL(r.lastGrab.userName, cm.GameGrabLandlord, cm.GameLevel)
 		if r.grabIndex == 0 {
 			r.landlordGrab = true
 		} else if r.grabIndex < 3 {
@@ -192,7 +164,7 @@ func (r *DdzRoom) GameGrabLandlord(msg DdzRoomMessage) {
 		}
 	} else {
 		log.Printf("用户[%s]不抢地主", r.roundClient.userName)
-		r.BroadcastL(r.roundClient.userName, GameNGrabLandlord, GameLevel)
+		r.BroadcastL(r.roundClient.userName, cm.GameNGrabLandlord, cm.GameLevel)
 	}
 	r.grabIndex += 1
 	r.waitUserOps = false
@@ -200,7 +172,7 @@ func (r *DdzRoom) GameGrabLandlord(msg DdzRoomMessage) {
 		if r.lastGrab == nil {
 			// 重新开局'
 			log.Println("未选出地主重新开局")
-			r.BroadcastL("", GameNoGrabLandlord, GameLevel)
+			r.BroadcastL("", cm.GameNoGrabLandlord, cm.GameLevel)
 			r.GameStart(false)
 			return
 		}
@@ -208,7 +180,7 @@ func (r *DdzRoom) GameGrabLandlord(msg DdzRoomMessage) {
 		r.landlord = r.lastGrab
 		r.roundClient = r.lastGrab
 		r.stageIndex += 1
-		r.BroadcastL(r.landlord.userName, GameGrabLandlordEnd, GameLevel)
+		r.BroadcastL(r.landlord.userName, cm.GameGrabLandlordEnd, cm.GameLevel)
 		log.Printf("地主用户[%s]", r.landlord.userName)
 	}
 }
@@ -217,9 +189,9 @@ func (r *DdzRoom) GameStart(reRl bool) {
 	log.Printf("房间[%d]对局开始", r.RoomId())
 	// 重新关联代表着新game开始
 	if reRl {
-		r.BroadcastL("", GameStart, GameLevel)
+		r.BroadcastL("", cm.GameStart, cm.GameLevel)
 	} else {
-		r.BroadcastL("", GameRestart, GameLevel)
+		r.BroadcastL("", cm.GameRestart, cm.GameLevel)
 	}
 	r.ddzStart = true
 	r.waitUserOps = false
@@ -251,7 +223,7 @@ func (r *DdzRoom) GameStart(reRl bool) {
 
 	log.Printf("房间[%d]开始发牌", r.RoomId())
 	pokers := r.RandomPokerSlice()
-	m := RandIntMap(0, len(pokers)-1, 3)
+	m := cm.RandIntMap(0, len(pokers)-1, 3)
 	pc := r.landlord
 	for i, p := range pokers {
 		if _, ok := m[i]; ok {
@@ -269,7 +241,7 @@ func (r *DdzRoom) GameStart(reRl bool) {
 
 	for _, dc := range r.ddzClients {
 		pokerJson, _ := json.Marshal(dc.PokerSlice)
-		dc.messageChan <- ClientMessage{GameLevel, GameDealPoker, true, string(pokerJson)}
+		dc.messageChan <- ClientMessage{cm.GameLevel, cm.GameDealPoker, true, string(pokerJson)}
 	}
 
 }
@@ -281,7 +253,7 @@ func (r *DdzRoom) GameEnd() {
 	close(r.iMessageChan)
 
 	r.ResetReady()
-	r.BroadcastL("", MessageType(GameStop), GameLevel)
+	r.BroadcastL("", cm.MessageType(cm.GameStop), cm.GameLevel)
 	// 取消关联
 	for _, dc := range r.ddzClients {
 		dc.Prev = nil
@@ -299,7 +271,7 @@ func (r *DdzRoom) Quit(c *Client) {
 	}
 	r.ddzClients = sliceRemove(r.ddzClients, rmIdx)
 	if r.ddzStart {
-		r.iMessageChan <- DdzRoomMessage{MessageType: GameStop}
+		r.iMessageChan <- DdzRoomMessage{MessageType: cm.GameStop}
 	}
 	if r.landlord.Client == c {
 		for _, nextClient := range r.ddzClients {
@@ -335,7 +307,7 @@ func (r *DdzRoom) GameMessage(msg RoomMessage) {
 			r.iMessageChan <- drm
 		}
 	} else if r.roundClient.Client != msg.client {
-		msg.client.messageChan <- ClientMessage{GameLevel, MessageType(GameInvalidOps),
+		msg.client.messageChan <- ClientMessage{cm.GameLevel, cm.MessageType(cm.GameInvalidOps),
 			false, ""}
 		log.Printf("用户[%s]无效操作", r.roundClient.userName)
 	}
@@ -344,7 +316,7 @@ func (r *DdzRoom) GameMessage(msg RoomMessage) {
 func (r *DdzRoom) Stop() {
 	if r.IsRun() {
 		// 增加随机close识别
-		r.iMessageChan <- DdzRoomMessage{MessageType: GameStop}
+		r.iMessageChan <- DdzRoomMessage{MessageType: cm.GameStop}
 	}
 }
 
@@ -359,14 +331,14 @@ func (r *DdzRoom) Run() {
 		for {
 			select {
 			case <-ticker.C:
-				r.iMessageChan <- DdzRoomMessage{MessageType: GameExe}
+				r.iMessageChan <- DdzRoomMessage{MessageType: cm.GameExe}
 			}
 		}
 	}()
 	for {
 		select {
 		case msg := <-r.iMessageChan:
-			if msg.MessageType == GameStop {
+			if msg.MessageType == cm.GameStop {
 				return
 			}
 			if cFunc, ok := r.iFuncMap[msg.MessageType]; ok {
@@ -386,18 +358,18 @@ func (r *DdzRoom) nextIndex(cur, add int) uint {
 	}
 }
 
-func (r *DdzRoom) RandomPokerSlice() []Poker {
-	var pokerSlice []Poker
+func (r *DdzRoom) RandomPokerSlice() []cm.Poker {
+	var pokerSlice []cm.Poker
 	suits := strings.Split(SuitStr, "|")
 	levels := strings.Split(LevelStr, "|")
 	for i, level := range levels {
 		for _, suit := range suits {
-			poker := Poker{Level: level, Score: uint(i), Suit: suit}
+			poker := cm.Poker{Level: level, Score: uint(i), Suit: suit}
 			pokerSlice = append(pokerSlice, poker)
 		}
 	}
 	for i, suit := range strings.Split(JokerSuitStr, "|") {
-		poker := Poker{Level: Joker, Score: uint(len(levels) + i), Suit: suit}
+		poker := cm.Poker{Level: Joker, Score: uint(len(levels) + i), Suit: suit}
 		pokerSlice = append(pokerSlice, poker)
 	}
 	rand.Seed(time.Now().UnixNano())
@@ -409,7 +381,7 @@ func (r *DdzRoom) RandomPokerSlice() []Poker {
 
 func (r *DdzRoom) UpdateLandlord(dc *DdzClient) {
 	r.landlord = dc
-	r.BroadcastL(dc.userName, GameNewLandlord, GameLevel)
+	r.BroadcastL(dc.userName, cm.GameNewLandlord, cm.GameLevel)
 }
 
 func sliceRemove(slice []*DdzClient, s int) []*DdzClient {
