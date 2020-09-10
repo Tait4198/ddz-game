@@ -73,7 +73,7 @@ func (c *Client) readPump() {
 			break
 		}
 		var rMessage ReceiveMessage
-		// 转换为实体对象
+		// 转换为实体对象（test）
 		err = json.Unmarshal(message, &rMessage)
 		if err == nil {
 			// 根据消息级别发送至center/room
