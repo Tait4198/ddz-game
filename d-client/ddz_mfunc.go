@@ -129,35 +129,34 @@ func (dc *DdzClient) GameGrabLandlordEnd(cm ClientMessage) {
 }
 
 func (dc *DdzClient) GameDealPoker(cm ClientMessage) {
-	var pks []gcm.Poker
-	if err := json.Unmarshal([]byte(cm.Message), &pks); err != nil {
-		panic(err)
-	}
+	pks := convertPokers(cm.Message)
 	dc.pokerSlice = pks
-	gcm.SortPoker(dc.pokerSlice, func(p, q *gcm.Poker) bool {
-		return p.Score < q.Score
-	})
 	dc.ShowSelfPoker()
 }
 
 func (dc *DdzClient) GameShowHolePokers(cm ClientMessage) {
-	var pks []gcm.Poker
-	if err := json.Unmarshal([]byte(cm.Message), &pks); err != nil {
-		panic(err)
-	}
+	pks := convertPokers(cm.Message)
 	log.Println("底牌如下:")
 	ShowPoker(pks)
 }
 
 func (dc *DdzClient) GameDealHolePokers(cm ClientMessage) {
-	var pks []gcm.Poker
-	if err := json.Unmarshal([]byte(cm.Message), &pks); err != nil {
-		panic(err)
-	}
+	pks := convertPokers(cm.Message)
 	dc.pokerSlice = append(dc.pokerSlice, pks...)
 	gcm.SortPoker(dc.pokerSlice, func(p, q *gcm.Poker) bool {
 		return p.Score < q.Score
 	})
 	log.Println("收到底牌后手牌如下:")
 	dc.ShowSelfPoker()
+}
+
+func convertPokers(pokerJson string) []gcm.Poker {
+	var pks []gcm.Poker
+	if err := json.Unmarshal([]byte(pokerJson), &pks); err != nil {
+		panic(err)
+	}
+	gcm.SortPoker(pks, func(p, q *gcm.Poker) bool {
+		return p.Score < q.Score
+	})
+	return pks
 }
