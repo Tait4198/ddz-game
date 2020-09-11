@@ -17,4 +17,6 @@ const (
 	GameNoGrabLandlord                  = 2105
 	GameNewLandlord                     = 2105
 	GameWaitGrabLandlord                = 2106
+	GameDealHolePokers                  = 2107 // 发送底牌
+	GameShowHolePokers                  = 2108 // 显示底牌
 )

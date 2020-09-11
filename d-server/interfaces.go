@@ -6,6 +6,7 @@ type BaseRoom interface {
 	RoomId() RoomId
 	MessageChan() chan RoomMessage
 	ClientMap() map[ClientId]*Client
+	ClientReadyMap() map[ClientId]bool
 	RoomSize() uint
 	Broadcast(cm.MessageType)
 	BroadcastM(string, cm.MessageType)

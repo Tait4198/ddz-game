@@ -123,6 +123,7 @@ func (c *Center) roomCreate(msg ServerMessage) {
 	c.roomMap[room.RoomId()] = room
 	// 房间clientMap添加client
 	room.ClientMap()[msg.client.id] = msg.client
+	room.ClientReadyMap()[msg.client.id] = false
 	// client当前房间更新
 	msg.client.currentRoom = room
 	// 执行加入房间
@@ -162,6 +163,7 @@ func (c *Center) roomJoin(msg ServerMessage) {
 			}
 			// client关联至房间
 			room.ClientMap()[client.id] = client
+			room.ClientReadyMap()[client.id] = false
 			// client当前房间更新
 			client.currentRoom = room
 			// 执行加入房间

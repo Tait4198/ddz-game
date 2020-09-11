@@ -4,6 +4,7 @@ import (
 	gcm "com.github/gc-common"
 	"encoding/json"
 	"fmt"
+	"log"
 )
 
 func (dc *DdzClient) GameNewLandlord(cm ClientMessage) {
@@ -31,7 +32,11 @@ func (dc *DdzClient) RoomQuit(cm ClientMessage) {
 }
 
 func (dc *DdzClient) RoomMissUser(cm ClientMessage) {
-	dc.ShowMessage(cm.Level, "缺少用户或存在未准备用户")
+	if cm.Message != "" {
+		dc.ShowMessage(cm.Level, cm.Message)
+	} else {
+		dc.ShowMessage(cm.Level, "无法准备(未知原因)")
+	}
 }
 
 func (dc *DdzClient) RoomReady(cm ClientMessage) {
@@ -107,7 +112,7 @@ func (dc *DdzClient) GameWaitGrabLandlord(cm ClientMessage) {
 }
 
 func (dc *DdzClient) GameGrabHostingOps(cm ClientMessage) {
-	dc.ShowMessage(cm.Level, "托管操作不抢地主")
+	dc.ShowMessage(cm.Level, fmt.Sprintf("[%s]托管操作不抢地主", cm.Message))
 }
 
 func (dc *DdzClient) GameGrabLandlord(cm ClientMessage) {
@@ -129,9 +134,30 @@ func (dc *DdzClient) GameDealPoker(cm ClientMessage) {
 		panic(err)
 	}
 	dc.pokerSlice = pks
-
 	gcm.SortPoker(dc.pokerSlice, func(p, q *gcm.Poker) bool {
 		return p.Score < q.Score
 	})
-	dc.ShowPoker()
+	dc.ShowSelfPoker()
+}
+
+func (dc *DdzClient) GameShowHolePokers(cm ClientMessage) {
+	var pks []gcm.Poker
+	if err := json.Unmarshal([]byte(cm.Message), &pks); err != nil {
+		panic(err)
+	}
+	log.Println("底牌如下:")
+	ShowPoker(pks)
+}
+
+func (dc *DdzClient) GameDealHolePokers(cm ClientMessage) {
+	var pks []gcm.Poker
+	if err := json.Unmarshal([]byte(cm.Message), &pks); err != nil {
+		panic(err)
+	}
+	dc.pokerSlice = append(dc.pokerSlice, pks...)
+	gcm.SortPoker(dc.pokerSlice, func(p, q *gcm.Poker) bool {
+		return p.Score < q.Score
+	})
+	log.Println("收到底牌后手牌如下:")
+	dc.ShowSelfPoker()
 }

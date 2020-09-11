@@ -122,7 +122,7 @@ func (r *DdzRoom) GameExe(msg DdzRoomMessage) {
 func stageGrab(auto bool, r *DdzRoom) {
 	if auto {
 		log.Printf("用户[%s]不抢地主(托管操作)", r.roundClient.userName)
-		r.BroadcastL("", cm.GameGrabHostingOps, cm.GameLevel)
+		r.BroadcastL(r.roundClient.userName, cm.GameGrabHostingOps, cm.GameLevel)
 		r.GameGrabLandlord(DdzRoomMessage{r.roundClient, "false", cm.GameGrabLandlord})
 	}
 	if r.grabIndex < 4 {
@@ -182,6 +182,14 @@ func (r *DdzRoom) GameGrabLandlord(msg DdzRoomMessage) {
 		r.stageIndex += 1
 		r.BroadcastL(r.landlord.userName, cm.GameGrabLandlordEnd, cm.GameLevel)
 		log.Printf("地主用户[%s]", r.landlord.userName)
+		holePokersJson, _ := json.Marshal(r.holePokers)
+		// 公示底牌
+		r.BroadcastL(string(holePokersJson), cm.GameShowHolePokers, cm.GameLevel)
+		log.Println("底牌已公示")
+		// 发送底牌给地主
+		r.landlord.messageChan <- ClientMessage{cm.GameLevel, cm.GameDealHolePokers,
+			true, string(holePokersJson)}
+		log.Println("底牌已发送")
 	}
 }
 

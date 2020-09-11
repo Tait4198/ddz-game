@@ -48,21 +48,21 @@ func fmtSprint(str string) string {
 	}
 }
 
-func (dc *DdzClient) ShowPoker() {
+func ShowPoker(pks []cm.Poker) {
 	// ┌ └ ┐ ┘ ─ │ ├ ┤ ┬ ┴ ┼
-	if dc.pokerSlice != nil {
+	if pks != nil {
 		var line0 = "┌"
 		var line1 = "│"
 		var line2 = "│"
 		var line3 = "│"
 		var line4 = "└"
-		for i, pk := range dc.pokerSlice {
+		for i, pk := range pks {
 			line0 += "──"
 			line1 += fmtSprint(pk.Level)
 			line2 += fmtSprint(pk.Suit)
 			line3 += fmtSprint(fmt.Sprint(i))
 			line4 += "──"
-			if i < len(dc.pokerSlice)-1 {
+			if i < len(pks)-1 {
 				line0 += "┬"
 				line1 += "│"
 				line2 += "│"
@@ -82,6 +82,10 @@ func (dc *DdzClient) ShowPoker() {
 		log.Println(line3)
 		log.Println(line4)
 	}
+}
+
+func (dc *DdzClient) ShowSelfPoker() {
+	ShowPoker(dc.pokerSlice)
 }
 
 func NewDdzClient(usr, pwd string) *DdzClient {
@@ -132,6 +136,8 @@ func NewDdzClient(usr, pwd string) *DdzClient {
 	dc.mFuncMap[cm.GameNGrabLandlord] = dc.GameNGrabLandlord
 	dc.mFuncMap[cm.GameGrabLandlordEnd] = dc.GameGrabLandlordEnd
 	dc.mFuncMap[cm.GameDealPoker] = dc.GameDealPoker
+	dc.mFuncMap[cm.GameDealHolePokers] = dc.GameDealHolePokers
+	dc.mFuncMap[cm.GameShowHolePokers] = dc.GameShowHolePokers
 	return dc
 }
 
@@ -158,14 +164,14 @@ func (dc *DdzClient) Run() {
 				log.Println("read:", err)
 				return
 			}
-			var cm ClientMessage
-			err = json.Unmarshal(message, &cm)
+			var cMsg ClientMessage
+			err = json.Unmarshal(message, &cMsg)
 			if err != nil {
 				log.Fatal("unmarshal:", err)
 				return
 			}
-			if mFunc, ok := dc.mFuncMap[cm.Type]; ok {
-				go mFunc(cm)
+			if mFunc, ok := dc.mFuncMap[cMsg.Type]; ok {
+				go mFunc(cMsg)
 			} else {
 				// 如果未找到处理方法直接输出
 				log.Printf("recv: %s", string(message))

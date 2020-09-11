@@ -2,6 +2,7 @@ package main
 
 import (
 	cm "com.github/gc-common"
+	"fmt"
 	"log"
 )
 
@@ -24,6 +25,10 @@ func (r *Room) RoomId() RoomId {
 
 func (r *Room) ClientMap() map[ClientId]*Client {
 	return r.clientMap
+}
+
+func (r *Room) ClientReadyMap() map[ClientId]bool {
+	return r.clientReadyMap
 }
 
 func (r *Room) MessageChan() chan RoomMessage {
@@ -51,6 +56,7 @@ func (r *Room) BroadcastL(msg string, msgType cm.MessageType, level cm.MessageLe
 func (r *Room) RemoveClient(id ClientId) {
 	if _, ok := r.clientMap[id]; ok {
 		delete(r.clientMap, id)
+		delete(r.clientReadyMap, id)
 	}
 }
 
@@ -97,11 +103,11 @@ func (r *Room) Ready(msg RoomMessage) {
 	c := msg.client
 	if r.homeowner.id == c.id {
 		allReady := true
-		r.clientReadyMap[c.id] = false
+		notReadyUser := ""
 		for ci, ready := range r.clientReadyMap {
 			if !ready && ci != r.homeowner.id {
 				allReady = false
-				break
+				notReadyUser += fmt.Sprintf("%s ", r.clientMap[ci].userName)
 			}
 		}
 		if allReady && uint(len(r.clientReadyMap)) == c.currentRoom.RoomSize() {
@@ -114,8 +120,14 @@ func (r *Room) Ready(msg RoomMessage) {
 			// 使用客户端所在到具体实现room进行开局
 			c.currentRoom.Run()
 		} else {
-			log.Println("还存在未准备用户或缺少用户")
-			c.messageChan <- ClientMessage{cm.RoomLevel, cm.RoomMissUser, false, ""}
+			msg := ""
+			if uint(len(r.clientReadyMap)) != c.currentRoom.RoomSize() {
+				msg = fmt.Sprintf("无法准备(当前房间用户[%d/%d])", len(r.clientReadyMap), c.currentRoom.RoomSize())
+			} else {
+				msg = fmt.Sprintf("无法准备(以下用户还未准备 %s)", notReadyUser)
+			}
+			log.Println(msg)
+			c.messageChan <- ClientMessage{cm.RoomLevel, cm.RoomMissUser, false, msg}
 		}
 	} else {
 		r.clientReadyMap[c.id] = true
