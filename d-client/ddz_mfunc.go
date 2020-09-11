@@ -1,6 +1,10 @@
 package main
 
-import "fmt"
+import (
+	gcm "com.github/gc-common"
+	"encoding/json"
+	"fmt"
+)
 
 func (dc *DdzClient) GameNewLandlord(cm ClientMessage) {
 	if cm.Message != "" {
@@ -117,4 +121,17 @@ func (dc *DdzClient) GameNGrabLandlord(cm ClientMessage) {
 func (dc *DdzClient) GameGrabLandlordEnd(cm ClientMessage) {
 	dc.ShowMessage(cm.Level, fmt.Sprintf("地主用户[%s]", cm.Message))
 	dc.landlord = cm.Message
+}
+
+func (dc *DdzClient) GameDealPoker(cm ClientMessage) {
+	var pks []gcm.Poker
+	if err := json.Unmarshal([]byte(cm.Message), &pks); err != nil {
+		panic(err)
+	}
+	dc.pokerSlice = pks
+
+	gcm.SortPoker(dc.pokerSlice, func(p, q *gcm.Poker) bool {
+		return p.Score < q.Score
+	})
+	dc.ShowPoker()
 }

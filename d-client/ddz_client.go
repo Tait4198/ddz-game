@@ -4,6 +4,7 @@ import (
 	"bufio"
 	cm "com.github/gc-common"
 	"encoding/json"
+	"fmt"
 	"github.com/gorilla/websocket"
 	"log"
 	"net/url"
@@ -19,10 +20,11 @@ type DdzClient struct {
 	mFuncMap map[cm.MessageType]MessageFunc
 	iFuncMap map[string]CommandFunc
 
-	landlord  string
-	roundUser string
-	isReady   bool
-	stage     GameStage
+	landlord   string
+	roundUser  string
+	isReady    bool
+	stage      GameStage
+	pokerSlice []cm.Poker
 }
 
 func (*DdzClient) ShowMessage(level cm.MessageLevel, message string) {
@@ -33,6 +35,52 @@ func (*DdzClient) ShowMessage(level cm.MessageLevel, message string) {
 		log.Printf("[房间消息]%s", message)
 	case cm.GameLevel:
 		log.Printf("[游戏消息]%s", message)
+	}
+}
+
+func fmtSprint(str string) string {
+	if len(str) == 1 {
+		return fmt.Sprintf(" %s", str)
+	} else if ok, err := regexp.Match("[♠♥♣♦]", []byte(str)); err == nil && ok {
+		return fmt.Sprintf(" %s", str)
+	} else {
+		return fmt.Sprintf("%s", str)
+	}
+}
+
+func (dc *DdzClient) ShowPoker() {
+	// ┌ └ ┐ ┘ ─ │ ├ ┤ ┬ ┴ ┼
+	if dc.pokerSlice != nil {
+		var line0 = "┌"
+		var line1 = "│"
+		var line2 = "│"
+		var line3 = "│"
+		var line4 = "└"
+		for i, pk := range dc.pokerSlice {
+			line0 += "──"
+			line1 += fmtSprint(pk.Level)
+			line2 += fmtSprint(pk.Suit)
+			line3 += fmtSprint(fmt.Sprint(i))
+			line4 += "──"
+			if i < len(dc.pokerSlice)-1 {
+				line0 += "┬"
+				line1 += "│"
+				line2 += "│"
+				line3 += "│"
+				line4 += "┴"
+			}
+		}
+		line0 += "┐"
+		line1 += "│"
+		line2 += "│"
+		line3 += "│"
+		line4 += "┘"
+
+		log.Println(line0)
+		log.Println(line1)
+		log.Println(line2)
+		log.Println(line3)
+		log.Println(line4)
 	}
 }
 
@@ -83,6 +131,7 @@ func NewDdzClient(usr, pwd string) *DdzClient {
 	dc.mFuncMap[cm.GameGrabLandlord] = dc.GameGrabLandlord
 	dc.mFuncMap[cm.GameNGrabLandlord] = dc.GameNGrabLandlord
 	dc.mFuncMap[cm.GameGrabLandlordEnd] = dc.GameGrabLandlordEnd
+	dc.mFuncMap[cm.GameDealPoker] = dc.GameDealPoker
 	return dc
 }
 

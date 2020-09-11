@@ -38,8 +38,8 @@ func (c *DdzClient) NextClient() *DdzClient {
 const RoundTimeVal = 20
 const SuitStr = "♠|♥|♣|♦"
 const LevelStr = "3|4|5|6|7|8|9|10|J|Q|K|A|2"
-const Joker = "JK"
-const JokerSuitStr = "r|b"
+const JokerS = "S"
+const JokerX = "X"
 
 type DdzRoom struct {
 	BaseRoom
@@ -368,10 +368,9 @@ func (r *DdzRoom) RandomPokerSlice() []cm.Poker {
 			pokerSlice = append(pokerSlice, poker)
 		}
 	}
-	for i, suit := range strings.Split(JokerSuitStr, "|") {
-		poker := cm.Poker{Level: Joker, Score: uint(len(levels) + i), Suit: suit}
-		pokerSlice = append(pokerSlice, poker)
-	}
+	pokerSlice = append(pokerSlice, cm.Poker{Level: JokerS, Score: uint(len(levels) + 1), Suit: " "})
+	pokerSlice = append(pokerSlice, cm.Poker{Level: JokerX, Score: uint(len(levels) + 2), Suit: " "})
+
 	rand.Seed(time.Now().UnixNano())
 	rand.Shuffle(len(pokerSlice), func(i, j int) {
 		pokerSlice[i], pokerSlice[j] = pokerSlice[j], pokerSlice[i]
