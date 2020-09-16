@@ -35,7 +35,7 @@ func (c *DdzClient) NextClient() *DdzClient {
 }
 
 // 回合时间
-const RoundTimeVal = 20
+const RoundTimeVal = 60
 const SuitStr = "♠|♥|♣|♦"
 const LevelStr = "3|4|5|6|7|8|9|10|J|Q|K|A|2"
 const JokerS = "S"
@@ -101,13 +101,12 @@ func (r *DdzRoom) GameExe(msg DdzRoomMessage) {
 	if !r.ddzStart {
 		r.GameStart(true)
 	}
-	if r.roundTime > 0 {
+
+	if r.roundTime > 0 && r.roundTime <= RoundTimeVal/3 && r.roundTime%10 == 0 {
+		r.roundClient.messageChan <- ClientMessage{cm.GameLevel, cm.MessageType(cm.GameCountdown),
+			true, fmt.Sprint(r.roundTime / 2)}
+		log.Printf("用户[%s]还剩%d秒操作时间", r.roundClient.userName, r.roundTime/2)
 		r.roundTime -= 1
-		if r.roundTime%10 == 0 {
-			r.roundClient.messageChan <- ClientMessage{cm.GameLevel, cm.MessageType(cm.GameCountdown),
-				true, fmt.Sprint(r.roundTime / 2)}
-			log.Printf("用户[%s]还剩%d秒操作时间", r.roundClient.userName, r.roundTime/2)
-		}
 	} else {
 		r.roundClient.messageChan <- ClientMessage{cm.GameLevel, cm.MessageType(cm.GameOpsTimeout),
 			true, ""}
@@ -195,10 +194,10 @@ func (r *DdzRoom) GameGrabLandlord(msg DdzRoomMessage) {
 }
 
 func (r *DdzRoom) GamePlayPoker(msg DdzRoomMessage) {
-	var play []int
-	err := json.Unmarshal([]byte(msg.Message), &play)
+	var pkIdx []int
+	err := json.Unmarshal([]byte(msg.Message), &pkIdx)
 	if err == nil {
-
+		log.Println(pkIdx)
 	} else {
 		panic(err)
 	}

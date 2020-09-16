@@ -4,6 +4,7 @@ import (
 	cm "com.github/gc-common"
 	"fmt"
 	"log"
+	"strings"
 )
 
 func (dc *DdzClient) CreateRoom(val string) {
@@ -55,6 +56,48 @@ func (dc *DdzClient) NoCommand(val string) {
 		GrabLandlord(dc, false)
 	default:
 		log.Println("还未轮到操作")
+	}
+}
+
+func (dc *DdzClient) PlayPoker(val string) {
+	if len(val) == 0 {
+		log.Println("Pass")
+	}
+	var tempPks []cm.Poker
+	var pkIdx []int
+	playIdx := 0
+	isValid := false
+	val = strings.ReplaceAll(val, "10", "0")
+	for i, pk := range dc.pokerSlice {
+		pkLevel := strings.ToUpper(val[playIdx : playIdx+1])
+		if pkLevel == "0" {
+			pkLevel = "10"
+		}
+		if pk.Level == pkLevel {
+			tempPks = append(tempPks, pk)
+			pkIdx = append(pkIdx, i)
+			playIdx++
+			if playIdx >= len(val) {
+				isValid = true
+				break
+			}
+		}
+	}
+	if isValid {
+		pkt := cm.GetPokerType(tempPks)
+		if pkt.PkType != cm.Invalid {
+			if dc.prevPoker != nil && cm.ComparePoker(tempPks, dc.prevPoker) == 0 || dc.prevPoker == nil {
+				gm := GameMessage{cm.StructToJsonString(pkIdx), cm.GamePlayPoker}
+				err := dc.conn.WriteJSON(SendMessage{cm.RoomLevel, cm.RoomGameMessage, cm.StructToJsonString(gm)})
+				if err != nil {
+					log.Fatal("PlayPoker error:", err)
+				}
+			} else {
+				log.Println("")
+			}
+		}
+	} else {
+		log.Println("无效出牌")
 	}
 }
 

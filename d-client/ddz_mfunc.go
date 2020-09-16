@@ -4,7 +4,6 @@ import (
 	gcm "com.github/gc-common"
 	"encoding/json"
 	"fmt"
-	"log"
 )
 
 func (dc *DdzClient) GameNewLandlord(cm ClientMessage) {
@@ -49,7 +48,7 @@ func (dc *DdzClient) RoomReady(cm ClientMessage) {
 func (dc *DdzClient) RoomCancelReady(cm ClientMessage) {
 	dc.ShowMessage(cm.Level, fmt.Sprintf("用户[%s]取消准备", cm.Message))
 	if cm.Message == dc.userName {
-		dc.isReady = true
+		dc.isReady = false
 	}
 }
 
@@ -136,15 +135,14 @@ func (dc *DdzClient) GameDealPoker(cm ClientMessage) {
 
 func (dc *DdzClient) GameShowHolePokers(cm ClientMessage) {
 	pks := convertPokers(cm.Message)
-	log.Println("底牌如下:")
-	ShowPoker(pks, false)
+	gcm.SortPoker(pks, gcm.SortByScore)
+	ShowPoker("底牌如下:", pks, false)
 }
 
 func (dc *DdzClient) GameDealHolePokers(cm ClientMessage) {
 	pks := convertPokers(cm.Message)
 	dc.pokerSlice = append(dc.pokerSlice, pks...)
 	gcm.SortPoker(dc.pokerSlice, gcm.SortByScore)
-	log.Println("收到底牌后手牌如下:")
 	dc.ShowSelfPoker()
 }
 

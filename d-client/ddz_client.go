@@ -25,6 +25,7 @@ type DdzClient struct {
 	isReady    bool
 	stage      GameStage
 	pokerSlice []cm.Poker
+	prevPoker  []cm.Poker
 }
 
 func (*DdzClient) ShowMessage(level cm.MessageLevel, message string) {
@@ -48,7 +49,7 @@ func fmtSprint(str string) string {
 	}
 }
 
-func ShowPoker(pks []cm.Poker, showIndex bool) {
+func ShowPoker(title string, pks []cm.Poker, showIndex bool) {
 	// ┌ └ ┐ ┘ ─ │ ├ ┤ ┬ ┴ ┼
 	if pks != nil {
 		var line0 = "┌"
@@ -75,6 +76,7 @@ func ShowPoker(pks []cm.Poker, showIndex bool) {
 		line2 += "│"
 		line3 += "│"
 		line4 += "┘"
+		log.Println(title)
 		log.Println(line0)
 		log.Println(line1)
 		log.Println(line2)
@@ -86,7 +88,7 @@ func ShowPoker(pks []cm.Poker, showIndex bool) {
 }
 
 func (dc *DdzClient) ShowSelfPoker() {
-	ShowPoker(dc.pokerSlice, true)
+	ShowPoker("手牌如下:", dc.pokerSlice, false)
 }
 
 func NewDdzClient(usr, pwd string) *DdzClient {
@@ -108,6 +110,8 @@ func NewDdzClient(usr, pwd string) *DdzClient {
 	dc.iFuncMap["y"] = dc.YesCommand
 	// 准备或取消准备
 	dc.iFuncMap["n"] = dc.NoCommand
+	// 出牌
+	dc.iFuncMap["p"] = dc.PlayPoker
 
 	// 消息监听
 	dc.mFuncMap[cm.RoomCreate] = dc.RoomCreate
