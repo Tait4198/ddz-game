@@ -88,6 +88,7 @@ func newDdzRoom(client *Client, center *Center) BaseRoom {
 	ddzRoom.UpdateHomeowner(client)
 	// ddz实现
 	ddzRoom.iFuncMap[cm.GameGrabLandlord] = ddzRoom.GameGrabLandlord
+	ddzRoom.iFuncMap[cm.GamePlayPoker] = ddzRoom.GamePlayPoker
 	ddzRoom.iFuncMap[cm.GameExe] = ddzRoom.GameExe
 
 	// 阶段方法
@@ -193,6 +194,16 @@ func (r *DdzRoom) GameGrabLandlord(msg DdzRoomMessage) {
 	}
 }
 
+func (r *DdzRoom) GamePlayPoker(msg DdzRoomMessage) {
+	var play []int
+	err := json.Unmarshal([]byte(msg.Message), &play)
+	if err == nil {
+
+	} else {
+		panic(err)
+	}
+}
+
 func (r *DdzRoom) GameStart(reRl bool) {
 	log.Printf("房间[%d]对局开始", r.RoomId())
 	// 重新关联代表着新game开始
@@ -248,6 +259,7 @@ func (r *DdzRoom) GameStart(reRl bool) {
 	}
 
 	for _, dc := range r.ddzClients {
+		cm.SortPoker(dc.PokerSlice, cm.SortByScore)
 		pokerJson, _ := json.Marshal(dc.PokerSlice)
 		dc.messageChan <- ClientMessage{cm.GameLevel, cm.GameDealPoker, true, string(pokerJson)}
 	}
@@ -376,8 +388,8 @@ func (r *DdzRoom) RandomPokerSlice() []cm.Poker {
 			pokerSlice = append(pokerSlice, poker)
 		}
 	}
-	pokerSlice = append(pokerSlice, cm.Poker{Level: JokerS, Score: uint(len(levels) + 1), Suit: " "})
-	pokerSlice = append(pokerSlice, cm.Poker{Level: JokerX, Score: uint(len(levels) + 2), Suit: " "})
+	pokerSlice = append(pokerSlice, cm.Poker{Level: JokerS, Score: uint(len(levels)), Suit: " "})
+	pokerSlice = append(pokerSlice, cm.Poker{Level: JokerX, Score: uint(len(levels) + 1), Suit: " "})
 
 	rand.Seed(time.Now().UnixNano())
 	rand.Shuffle(len(pokerSlice), func(i, j int) {

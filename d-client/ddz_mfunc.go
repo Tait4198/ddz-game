@@ -124,7 +124,7 @@ func (dc *DdzClient) GameNGrabLandlord(cm ClientMessage) {
 }
 
 func (dc *DdzClient) GameGrabLandlordEnd(cm ClientMessage) {
-	dc.ShowMessage(cm.Level, fmt.Sprintf("地主用户[%s]", cm.Message))
+	dc.ShowMessage(cm.Level, fmt.Sprintf("***地主用户[%s]***", cm.Message))
 	dc.landlord = cm.Message
 }
 
@@ -137,15 +137,13 @@ func (dc *DdzClient) GameDealPoker(cm ClientMessage) {
 func (dc *DdzClient) GameShowHolePokers(cm ClientMessage) {
 	pks := convertPokers(cm.Message)
 	log.Println("底牌如下:")
-	ShowPoker(pks)
+	ShowPoker(pks, false)
 }
 
 func (dc *DdzClient) GameDealHolePokers(cm ClientMessage) {
 	pks := convertPokers(cm.Message)
 	dc.pokerSlice = append(dc.pokerSlice, pks...)
-	gcm.SortPoker(dc.pokerSlice, func(p, q *gcm.Poker) bool {
-		return p.Score < q.Score
-	})
+	gcm.SortPoker(dc.pokerSlice, gcm.SortByScore)
 	log.Println("收到底牌后手牌如下:")
 	dc.ShowSelfPoker()
 }
@@ -155,8 +153,5 @@ func convertPokers(pokerJson string) []gcm.Poker {
 	if err := json.Unmarshal([]byte(pokerJson), &pks); err != nil {
 		panic(err)
 	}
-	gcm.SortPoker(pks, func(p, q *gcm.Poker) bool {
-		return p.Score < q.Score
-	})
 	return pks
 }

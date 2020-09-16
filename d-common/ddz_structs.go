@@ -7,6 +7,14 @@ import (
 
 type DdzMessageType uint
 
+type DdzPokerType uint
+
+type DdzPokerResult struct {
+	PkType DdzPokerType
+	Score  uint
+	Len    uint
+}
+
 type Poker struct {
 	Suit  string
 	Level string
@@ -34,6 +42,10 @@ func (pw PokerWrapper) Less(i, j int) bool {
 
 func SortPoker(pks []Poker, by SortBy) {
 	sort.Sort(PokerWrapper{pks, by})
+}
+
+func SortByScore(p, q *Poker) bool {
+	return p.Score < q.Score
 }
 
 func (p *Poker) String() string {

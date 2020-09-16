@@ -48,7 +48,7 @@ func fmtSprint(str string) string {
 	}
 }
 
-func ShowPoker(pks []cm.Poker) {
+func ShowPoker(pks []cm.Poker, showIndex bool) {
 	// ┌ └ ┐ ┘ ─ │ ├ ┤ ┬ ┴ ┼
 	if pks != nil {
 		var line0 = "┌"
@@ -75,17 +75,18 @@ func ShowPoker(pks []cm.Poker) {
 		line2 += "│"
 		line3 += "│"
 		line4 += "┘"
-
 		log.Println(line0)
 		log.Println(line1)
 		log.Println(line2)
-		log.Println(line3)
+		if showIndex {
+			log.Println(line3)
+		}
 		log.Println(line4)
 	}
 }
 
 func (dc *DdzClient) ShowSelfPoker() {
-	ShowPoker(dc.pokerSlice)
+	ShowPoker(dc.pokerSlice, true)
 }
 
 func NewDdzClient(usr, pwd string) *DdzClient {
