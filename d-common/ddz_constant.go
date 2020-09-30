@@ -3,6 +3,7 @@ package d_common
 const (
 	StageGrabLandlord GameStage = 1 //抢地主阶段
 	StagePlayPoker              = 2 //游戏阶段
+	StageSettlement             = 3 //结算阶段
 )
 
 const (
@@ -30,4 +31,5 @@ const (
 	GamePlayPokerHostingOps                = 2112 // 玩家出牌托管操作
 	GamePlayPokerInvalid                   = 2113 // 出牌无效
 	GamePlayPokerRemaining                 = 2114 // 剩余手牌提示
+	GameSettlement                         = 2115 // 游戏结算
 )

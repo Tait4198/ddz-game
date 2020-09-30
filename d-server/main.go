@@ -51,5 +51,5 @@ func main() {
 		}
 		newClient(usr, clientId, center, conn)
 	})
-	_ = http.ListenAndServe(":8080", nil)
+	_ = http.ListenAndServe("0.0.0.0:8080", nil)
 }

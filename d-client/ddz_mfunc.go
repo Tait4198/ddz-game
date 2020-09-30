@@ -172,6 +172,13 @@ func (dc *DdzClient) GamePlayPokerRemaining(cm ClientMessage) {
 	}
 }
 
+func (dc *DdzClient) GameSettlement(cm ClientMessage) {
+	dc.stage = gcm.StageSettlement
+	dc.ShowMessage(cm.Level, fmt.Sprintf("***[%s]获得对局胜利***", cm.Message))
+	dc.ShowMessage(cm.Level, fmt.Sprintf("***[%s]为优胜者***", dc.roundUser))
+	dc.ShowMessage(cm.Level, "***开始结算***")
+}
+
 func convertPokers(pokerJson string) []gcm.Poker {
 	var pks []gcm.Poker
 	if err := json.Unmarshal([]byte(pokerJson), &pks); err != nil {

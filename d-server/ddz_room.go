@@ -100,6 +100,7 @@ func newDdzRoom(client *Client, center *Center) BaseRoom {
 	// 阶段方法
 	ddzRoom.stageFuncMap[cm.StageGrabLandlord] = stageGrab
 	ddzRoom.stageFuncMap[cm.StagePlayPoker] = stagePlay
+	ddzRoom.stageFuncMap[cm.StageSettlement] = stageSettlement
 	return ddzRoom
 }
 
@@ -148,7 +149,7 @@ func stageGrab(auto bool, r *DdzRoom) {
 
 func stagePlay(auto bool, r *DdzRoom) {
 	if auto {
-		// 托管
+		// todo 托管
 	}
 	if r.gameRound == 0 {
 		r.roundClient = r.landlord
@@ -158,10 +159,25 @@ func stagePlay(auto bool, r *DdzRoom) {
 		r.roundClient = r.roundClient.NextClient()
 		log.Printf("[%s]准备出牌", r.roundClient.userName)
 	}
-	r.roundClient.messageChan <- ClientMessage{cm.GameLevel, 0, true, "准备出牌"}
 	r.waitUserOps = true
 	r.roundTime = RoundTimeVal
 	r.gameRound += 1
+}
+
+func stageSettlement(auto bool, r *DdzRoom) {
+	var winner string
+	if r.lastPlay == r.landlord {
+		winner = "地主"
+	} else {
+		winner = "农民"
+	}
+	r.BroadcastL(winner, cm.GameSettlement, cm.GameLevel)
+
+	// 优胜者成为新地主
+	r.UpdateLandlord(r.lastPlay)
+
+	// 游戏结束
+	r.iMessageChan <- DdzRoomMessage{MessageType: cm.GameStop}
 }
 
 func (r *DdzRoom) GameGrabLandlord(msg DdzRoomMessage) {
@@ -254,8 +270,11 @@ func (r *DdzRoom) GamePlayPoker(msg DdzRoomMessage) {
 			true, cm.StructToJsonString(msg.client.PokerSlice)}
 		// 广播出牌
 		r.BroadcastL(cm.StructToJsonString(playPks), cm.GamePlayPoker, cm.GameLevel)
-		// 剩余手牌提示
-		if len(msg.client.PokerSlice) < 5 {
+		if len(msg.client.PokerSlice) == 0 {
+			// 进入结算阶段
+			r.stage = cm.StageSettlement
+		} else if len(msg.client.PokerSlice) < 5 {
+			// 剩余手牌提示
 			r.BroadcastL(fmt.Sprint(len(msg.client.PokerSlice)), cm.MessageType(cm.GamePlayPokerRemaining), cm.GameLevel)
 		}
 		// 等待结束
