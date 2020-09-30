@@ -146,6 +146,18 @@ func (dc *DdzClient) GameDealHolePokers(cm ClientMessage) {
 	dc.ShowSelfPoker()
 }
 
+func (dc *DdzClient) GamePlayPoker(cm ClientMessage) {
+	pks := convertPokers(cm.Message)
+	gcm.SortPoker(pks, gcm.SortByScore)
+	ShowPoker(fmt.Sprintf("[%s]出牌:", dc.roundUser), pks, false)
+
+}
+
+func (dc *DdzClient) GamePlayPokerUpdate(cm ClientMessage) {
+	dc.pokerSlice = convertPokers(cm.Message)
+	dc.ShowSelfPoker()
+}
+
 func convertPokers(pokerJson string) []gcm.Poker {
 	var pks []gcm.Poker
 	if err := json.Unmarshal([]byte(pokerJson), &pks); err != nil {

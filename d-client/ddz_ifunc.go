@@ -65,40 +65,38 @@ func (dc *DdzClient) PlayPoker(val string) {
 	}
 	var tempPks []cm.Poker
 	var pkIdx []int
-	playIdx := 0
-	isValid := false
 	val = strings.ReplaceAll(val, "10", "0")
-	for i, pk := range dc.pokerSlice {
-		pkLevel := strings.ToUpper(val[playIdx : playIdx+1])
+	// 记录已匹配poker
+	cPkMap := make(map[int]byte)
+	for i := 0; i < len(val); i++ {
+		pkLevel := strings.ToUpper(val[i : i+1])
 		if pkLevel == "0" {
 			pkLevel = "10"
 		}
-		if pk.Level == pkLevel {
-			tempPks = append(tempPks, pk)
-			pkIdx = append(pkIdx, i)
-			playIdx++
-			if playIdx >= len(val) {
-				isValid = true
+		for j, pk := range dc.pokerSlice {
+			if _, ok := cPkMap[j]; !ok && pk.Level == pkLevel {
+				tempPks = append(tempPks, pk)
+				pkIdx = append(pkIdx, j)
+				cPkMap[j] = 0
 				break
 			}
 		}
 	}
-	if isValid {
+	if len(pkIdx) == len(val) {
 		pkt := cm.GetPokerType(tempPks)
 		if pkt.PkType != cm.Invalid {
-			if dc.prevPoker != nil && cm.ComparePoker(tempPks, dc.prevPoker) == 0 || dc.prevPoker == nil {
+			if (dc.prevPoker != nil && cm.ComparePoker(tempPks, dc.prevPoker) == 0) || dc.prevPoker == nil {
 				gm := GameMessage{cm.StructToJsonString(pkIdx), cm.GamePlayPoker}
 				err := dc.conn.WriteJSON(SendMessage{cm.RoomLevel, cm.RoomGameMessage, cm.StructToJsonString(gm)})
 				if err != nil {
 					log.Fatal("PlayPoker error:", err)
+				} else {
+					return
 				}
-			} else {
-				log.Println("")
 			}
 		}
-	} else {
-		log.Println("无效出牌")
 	}
+	log.Println("无效出牌")
 }
 
 func GrabLandlord(dc *DdzClient, val bool) {

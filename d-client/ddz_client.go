@@ -143,6 +143,8 @@ func NewDdzClient(usr, pwd string) *DdzClient {
 	dc.mFuncMap[cm.GameDealPoker] = dc.GameDealPoker
 	dc.mFuncMap[cm.GameDealHolePokers] = dc.GameDealHolePokers
 	dc.mFuncMap[cm.GameShowHolePokers] = dc.GameShowHolePokers
+	dc.mFuncMap[cm.GamePlayPoker] = dc.GamePlayPoker
+	dc.mFuncMap[cm.GamePlayPokerUpdate] = dc.GamePlayPokerUpdate
 	return dc
 }
 

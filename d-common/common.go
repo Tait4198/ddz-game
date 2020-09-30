@@ -8,12 +8,16 @@ import (
 )
 
 func StructToJsonString(obj interface{}) string {
+	return string(StructToJsonByte(obj))
+}
+
+func StructToJsonByte(obj interface{}) []byte {
 	jBytes, err := json.Marshal(obj)
 	if err != nil {
 		log.Println("marshal error")
-		return ""
+		return []byte{}
 	}
-	return string(jBytes)
+	return jBytes
 }
 
 func SliceIndex(limit int, predicate func(i int) bool) int {

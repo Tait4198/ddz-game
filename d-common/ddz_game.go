@@ -250,3 +250,17 @@ func checkAircraft(pkMap map[uint]uint, pks []Poker) DdzPokerResult {
 	}
 	return DdzPokerResult{Invalid, 0, 0}
 }
+
+func PokerRemove(slice []Poker, rms []int) []Poker {
+	var pks []Poker
+	ckMap := make(map[int]byte)
+	for _, rm := range rms {
+		ckMap[rm] = 0
+	}
+	for i, pk := range slice {
+		if _, ok := ckMap[i]; !ok {
+			pks = append(pks, pk)
+		}
+	}
+	return pks
+}

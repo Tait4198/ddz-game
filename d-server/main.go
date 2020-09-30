@@ -7,6 +7,8 @@ import (
 	"net/http"
 )
 
+// todo tap联想
+
 var upgrade = websocket.Upgrader{
 	ReadBufferSize:  1024,
 	WriteBufferSize: 1024,

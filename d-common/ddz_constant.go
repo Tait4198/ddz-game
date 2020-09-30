@@ -20,4 +20,5 @@ const (
 	GameDealHolePokers                  = 2107 // 发送底牌
 	GameShowHolePokers                  = 2108 // 显示底牌
 	GamePlayPoker                       = 2109 // 出牌
+	GamePlayPokerUpdate                 = 2110 // 手牌更新
 )
