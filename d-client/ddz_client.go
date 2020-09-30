@@ -23,9 +23,11 @@ type DdzClient struct {
 	landlord   string
 	roundUser  string
 	isReady    bool
-	stage      GameStage
+	stage      cm.GameStage
 	pokerSlice []cm.Poker
-	prevPoker  []cm.Poker
+
+	prevPoker []cm.Poker
+	lastPlay  string
 }
 
 func (*DdzClient) ShowMessage(level cm.MessageLevel, message string) {
@@ -36,6 +38,8 @@ func (*DdzClient) ShowMessage(level cm.MessageLevel, message string) {
 		log.Printf("[房间消息]%s", message)
 	case cm.GameLevel:
 		log.Printf("[游戏消息]%s", message)
+	case cm.ClientLevel:
+		log.Printf("[客户端消息]%s", message)
 	}
 }
 
@@ -106,12 +110,14 @@ func NewDdzClient(usr, pwd string) *DdzClient {
 	dc.iFuncMap["j"] = dc.JoinRoom
 	// 准备或取消准备
 	dc.iFuncMap["r"] = dc.ReadyOrCancelRoom
-	// 准备或取消准备
+	// 确定操作
 	dc.iFuncMap["y"] = dc.YesCommand
-	// 准备或取消准备
+	// 取消操作
 	dc.iFuncMap["n"] = dc.NoCommand
-	// 出牌
+	// 出牌或跳过出牌
 	dc.iFuncMap["p"] = dc.PlayPoker
+	// [s p] 显示手牌 [s l]显示房主
+	dc.iFuncMap["s"] = dc.ShowData
 
 	// 消息监听
 	dc.mFuncMap[cm.RoomCreate] = dc.RoomCreate
@@ -145,6 +151,8 @@ func NewDdzClient(usr, pwd string) *DdzClient {
 	dc.mFuncMap[cm.GameShowHolePokers] = dc.GameShowHolePokers
 	dc.mFuncMap[cm.GamePlayPoker] = dc.GamePlayPoker
 	dc.mFuncMap[cm.GamePlayPokerUpdate] = dc.GamePlayPokerUpdate
+	dc.mFuncMap[cm.GamePlayPokerSkip] = dc.GamePlayPokerSkip
+	dc.mFuncMap[cm.GamePlayPokerRemaining] = dc.GamePlayPokerRemaining
 	return dc
 }
 
@@ -196,7 +204,7 @@ func (dc *DdzClient) Run() {
 		}
 		text = strings.ReplaceAll(text, "\n", "")
 		if match, _ := regexp.MatchString("^(\\w [\\w\\d]+)|(\\w+)$", text); !match {
-			log.Println("无效输入")
+			dc.ShowMessage(cm.ClientLevel, "输入无效")
 			continue
 		}
 		arr := strings.Split(text, " ")
@@ -208,7 +216,7 @@ func (dc *DdzClient) Run() {
 				iFunc("")
 			}
 		} else {
-			log.Println("无效命令")
+			dc.ShowMessage(cm.ClientLevel, "命令无效")
 		}
 	}
 }

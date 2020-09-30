@@ -4,6 +4,7 @@ import (
 	gcm "com.github/gc-common"
 	"encoding/json"
 	"fmt"
+	"strconv"
 )
 
 func (dc *DdzClient) GameNewLandlord(cm ClientMessage) {
@@ -107,7 +108,7 @@ func (dc *DdzClient) GameNextUserOps(cm ClientMessage) {
 
 func (dc *DdzClient) GameWaitGrabLandlord(cm ClientMessage) {
 	dc.ShowMessage(cm.Level, "是否抢地主 (y/n)")
-	dc.stage = StageGrabLandlord
+	dc.stage = gcm.StageGrabLandlord
 }
 
 func (dc *DdzClient) GameGrabHostingOps(cm ClientMessage) {
@@ -125,6 +126,7 @@ func (dc *DdzClient) GameNGrabLandlord(cm ClientMessage) {
 func (dc *DdzClient) GameGrabLandlordEnd(cm ClientMessage) {
 	dc.ShowMessage(cm.Level, fmt.Sprintf("***地主用户[%s]***", cm.Message))
 	dc.landlord = cm.Message
+	dc.stage = gcm.StagePlayPoker
 }
 
 func (dc *DdzClient) GameDealPoker(cm ClientMessage) {
@@ -136,7 +138,7 @@ func (dc *DdzClient) GameDealPoker(cm ClientMessage) {
 func (dc *DdzClient) GameShowHolePokers(cm ClientMessage) {
 	pks := convertPokers(cm.Message)
 	gcm.SortPoker(pks, gcm.SortByScore)
-	ShowPoker("底牌如下:", pks, false)
+	ShowPoker("底牌:", pks, false)
 }
 
 func (dc *DdzClient) GameDealHolePokers(cm ClientMessage) {
@@ -149,13 +151,25 @@ func (dc *DdzClient) GameDealHolePokers(cm ClientMessage) {
 func (dc *DdzClient) GamePlayPoker(cm ClientMessage) {
 	pks := convertPokers(cm.Message)
 	gcm.SortPoker(pks, gcm.SortByScore)
+	dc.prevPoker = pks
+	dc.lastPlay = dc.roundUser
 	ShowPoker(fmt.Sprintf("[%s]出牌:", dc.roundUser), pks, false)
-
 }
 
 func (dc *DdzClient) GamePlayPokerUpdate(cm ClientMessage) {
 	dc.pokerSlice = convertPokers(cm.Message)
 	dc.ShowSelfPoker()
+}
+
+func (dc *DdzClient) GamePlayPokerSkip(cm ClientMessage) {
+	dc.ShowMessage(cm.Level, fmt.Sprintf("[%s]跳过出牌", dc.roundUser))
+}
+
+func (dc *DdzClient) GamePlayPokerRemaining(cm ClientMessage) {
+	val, err := strconv.ParseUint(cm.Message, 10, 32)
+	if err == nil {
+		dc.ShowMessage(cm.Level, fmt.Sprintf("***注意[%s]还剩%d张手牌***", dc.roundUser, val))
+	}
 }
 
 func convertPokers(pokerJson string) []gcm.Poker {

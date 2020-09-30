@@ -9,6 +9,9 @@ type DdzMessageType uint
 
 type DdzPokerType uint
 
+// 游戏阶段
+type GameStage uint
+
 type DdzPokerResult struct {
 	PkType DdzPokerType
 	Score  uint

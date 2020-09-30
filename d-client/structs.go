@@ -6,9 +6,6 @@ type MessageFunc func(ClientMessage)
 
 type CommandFunc func(string)
 
-// 游戏阶段
-type GameStage uint
-
 // 客户端发出消息
 type ClientMessage struct {
 	Level   cm.MessageLevel `json:"level"`

@@ -46,7 +46,7 @@ type DdzRoom struct {
 	iFuncMap     map[cm.DdzMessageType]DdzRoomMessageFunc
 	iMessageChan chan DdzRoomMessage
 	ddzStart     bool
-	stageFuncMap map[uint]DdzStageFunc
+	stageFuncMap map[cm.GameStage]DdzStageFunc
 
 	landlord    *DdzClient
 	roundClient *DdzClient
@@ -54,8 +54,8 @@ type DdzRoom struct {
 	waitUserOps bool
 	ddzClients  []*DdzClient
 
-	// 阶段计数
-	stageIndex uint
+	// 游戏阶段
+	stage cm.GameStage
 
 	holePokers []cm.Poker
 
@@ -88,17 +88,18 @@ func newDdzRoom(client *Client, center *Center) BaseRoom {
 	ddzRoom := &DdzRoom{
 		BaseRoom:     newRoom(center),
 		iFuncMap:     make(map[cm.DdzMessageType]DdzRoomMessageFunc),
-		stageFuncMap: make(map[uint]DdzStageFunc),
+		stageFuncMap: make(map[cm.GameStage]DdzStageFunc),
 	}
 	ddzRoom.UpdateHomeowner(client)
 	// ddz实现
 	ddzRoom.iFuncMap[cm.GameGrabLandlord] = ddzRoom.GameGrabLandlord
 	ddzRoom.iFuncMap[cm.GamePlayPoker] = ddzRoom.GamePlayPoker
+	ddzRoom.iFuncMap[cm.GamePlayPokerSkip] = ddzRoom.GamePlayPokerSkip
 	ddzRoom.iFuncMap[cm.GameExe] = ddzRoom.GameExe
 
 	// 阶段方法
-	ddzRoom.stageFuncMap[0] = stageGrab
-	ddzRoom.stageFuncMap[1] = stagePlay
+	ddzRoom.stageFuncMap[cm.StageGrabLandlord] = stageGrab
+	ddzRoom.stageFuncMap[cm.StagePlayPoker] = stagePlay
 	return ddzRoom
 }
 
@@ -106,10 +107,9 @@ func (r *DdzRoom) GameExe(msg DdzRoomMessage) {
 	if !r.ddzStart {
 		r.GameStart(true)
 	}
-
 	if r.roundTime > 0 {
 		r.roundTime -= 1
-		if r.roundTime%10 == 0 && r.roundTime < RoundTimeVal/3 {
+		if r.roundTime%10 == 0 && r.roundTime <= RoundTimeVal/3 {
 			r.roundClient.messageChan <- ClientMessage{cm.GameLevel, cm.MessageType(cm.GameCountdown),
 				true, fmt.Sprint(r.roundTime / 2)}
 			log.Printf("用户[%s]还剩%d秒操作时间", r.roundClient.userName, r.roundTime/2)
@@ -124,7 +124,7 @@ func (r *DdzRoom) GameExe(msg DdzRoomMessage) {
 		return
 	}
 	// 如果roundTime大于0则代表着主动操作结束
-	r.stageFuncMap[r.stageIndex](!(r.roundTime > 0), r)
+	r.stageFuncMap[r.stage](!(r.roundTime > 0), r)
 }
 
 func stageGrab(auto bool, r *DdzRoom) {
@@ -147,6 +147,9 @@ func stageGrab(auto bool, r *DdzRoom) {
 }
 
 func stagePlay(auto bool, r *DdzRoom) {
+	if auto {
+		// 托管
+	}
 	if r.gameRound == 0 {
 		r.roundClient = r.landlord
 		r.BroadcastL(r.roundClient.userName, cm.GameNextUserOps, cm.GameLevel)
@@ -187,9 +190,9 @@ func (r *DdzRoom) GameGrabLandlord(msg DdzRoomMessage) {
 			return
 		}
 		// 阶段结束
+		r.stage = cm.StagePlayPoker
 		r.landlord = r.lastGrab
 		r.roundClient = r.lastGrab
-		r.stageIndex += 1
 		r.BroadcastL(r.landlord.userName, cm.GameGrabLandlordEnd, cm.GameLevel)
 		log.Printf("地主用户[%s]", r.landlord.userName)
 		r.landlord.PokerSlice = append(r.landlord.PokerSlice, r.holePokers...)
@@ -205,37 +208,58 @@ func (r *DdzRoom) GameGrabLandlord(msg DdzRoomMessage) {
 	}
 }
 
+func (r *DdzRoom) GamePlayPokerSkip(msg DdzRoomMessage) {
+	// 广播消息
+	r.BroadcastL("", cm.GamePlayPokerSkip, cm.GameLevel)
+	r.waitUserOps = false
+}
+
 func (r *DdzRoom) GamePlayPoker(msg DdzRoomMessage) {
 	var pkIdx []int
 	err := json.Unmarshal([]byte(msg.Message), &pkIdx)
+	playPokerInvalidMsg := ClientMessage{cm.GameLevel,
+		cm.MessageType(cm.GamePlayPokerInvalid), true, ""}
 	if err == nil {
 		pkSlice := msg.client.PokerSlice
 		if len(pkIdx) > len(pkSlice) {
-			// error
+			msg.client.messageChan <- playPokerInvalidMsg
+			return
 		}
-		var tempPks []cm.Poker
+		var playPks []cm.Poker
 		for _, idx := range pkIdx {
 			if idx < len(msg.client.PokerSlice) {
-				tempPks = append(tempPks, pkSlice[idx])
+				playPks = append(playPks, pkSlice[idx])
 			} else {
-				// error
+				msg.client.messageChan <- playPokerInvalidMsg
+				return
 			}
 		}
+
+		if r.prevPokers == nil || r.lastPlay == msg.client {
+			// 对局第一次出牌或出牌后无人压制
+			r.prevPokers = playPks
+			r.lastPlay = msg.client
+		} else if cm.ComparePoker(playPks, r.prevPokers) == 0 {
+			// 出牌大于上家
+			r.prevPokers = playPks
+			r.lastPlay = msg.client
+		} else {
+			msg.client.messageChan <- playPokerInvalidMsg
+			return
+		}
+
 		msg.client.PokerSlice = cm.PokerRemove(msg.client.PokerSlice, pkIdx)
-
-		if r.prevPokers == nil {
-			r.prevPokers = tempPks
-		}
-
-		log.Printf("%s出牌", msg.client.userName)
-		for _, pk := range tempPks {
-			log.Println(pk)
-		}
-
+		// 更新手牌
 		msg.client.messageChan <- ClientMessage{cm.GameLevel, cm.MessageType(cm.GamePlayPokerUpdate),
 			true, cm.StructToJsonString(msg.client.PokerSlice)}
-
-		r.BroadcastL(cm.StructToJsonString(tempPks), cm.GamePlayPoker, cm.GameLevel)
+		// 广播出牌
+		r.BroadcastL(cm.StructToJsonString(playPks), cm.GamePlayPoker, cm.GameLevel)
+		// 剩余手牌提示
+		if len(msg.client.PokerSlice) < 5 {
+			r.BroadcastL(fmt.Sprint(len(msg.client.PokerSlice)), cm.MessageType(cm.GamePlayPokerRemaining), cm.GameLevel)
+		}
+		// 等待结束
+		r.waitUserOps = false
 	} else {
 		panic(err)
 	}
@@ -254,7 +278,7 @@ func (r *DdzRoom) GameStart(reRl bool) {
 	r.roundClient = nil
 	r.roundTime = RoundTimeVal
 
-	r.stageIndex = 0
+	r.stage = cm.StageGrabLandlord
 	r.holePokers = nil
 
 	r.lastGrab = nil
