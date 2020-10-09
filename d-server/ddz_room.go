@@ -47,6 +47,7 @@ type DdzRoom struct {
 	iMessageChan chan DdzRoomMessage
 	ddzStart     bool
 	stageFuncMap map[cm.GameStage]DdzStageFunc
+	closeCode    string
 
 	landlord    *DdzClient
 	roundClient *DdzClient
@@ -177,7 +178,7 @@ func stageSettlement(auto bool, r *DdzRoom) {
 	r.UpdateLandlord(r.lastPlay)
 
 	// 游戏结束
-	r.iMessageChan <- DdzRoomMessage{MessageType: cm.GameStop}
+	r.iMessageChan <- DdzRoomMessage{MessageType: cm.GameStop, Message: r.closeCode}
 }
 
 func (r *DdzRoom) GameGrabLandlord(msg DdzRoomMessage) {
@@ -310,6 +311,8 @@ func (r *DdzRoom) GameStart(reRl bool) {
 
 	r.gameRound = 0
 
+	r.closeCode = fmt.Sprint(rand.Int31n(999999))
+
 	// 对局开始调用
 	// 建立关联
 	if reRl {
@@ -374,7 +377,7 @@ func (r *DdzRoom) Quit(c *Client) {
 	}
 	r.ddzClients = sliceRemove(r.ddzClients, rmIdx)
 	if r.ddzStart {
-		r.iMessageChan <- DdzRoomMessage{MessageType: cm.GameStop}
+		r.iMessageChan <- DdzRoomMessage{MessageType: cm.GameStop, Message: r.closeCode}
 	}
 	if r.landlord.Client == c {
 		for _, nextClient := range r.ddzClients {
@@ -419,7 +422,7 @@ func (r *DdzRoom) GameMessage(msg RoomMessage) {
 func (r *DdzRoom) Stop() {
 	if r.IsRun() {
 		// 增加随机close识别
-		r.iMessageChan <- DdzRoomMessage{MessageType: cm.GameStop}
+		r.iMessageChan <- DdzRoomMessage{MessageType: cm.GameStop, Message: r.closeCode}
 	}
 }
 
@@ -442,7 +445,12 @@ func (r *DdzRoom) Run() {
 		select {
 		case msg := <-r.iMessageChan:
 			if msg.MessageType == cm.GameStop {
-				return
+				if msg.Message == r.closeCode {
+					return
+				} else {
+					log.Printf("CloseCode[%s]无效", msg.Message)
+					continue
+				}
 			}
 			if cFunc, ok := r.iFuncMap[msg.MessageType]; ok {
 				cFunc(msg)

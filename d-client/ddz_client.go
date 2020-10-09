@@ -80,14 +80,14 @@ func ShowPoker(title string, pks []cm.Poker, showIndex bool) {
 		line2 += "│"
 		line3 += "│"
 		line4 += "┘"
-		log.Println(title)
-		log.Println(line0)
-		log.Println(line1)
-		log.Println(line2)
+
+		var showPks string
 		if showIndex {
-			log.Println(line3)
+			showPks = title + "\n" + line0 + "\n" + line1 + "\n" + line2 + "\n" + line3 + "\n" + line4
+		} else {
+			showPks = title + "\n" + line0 + "\n" + line1 + "\n" + line2 + "\n" + line4
 		}
-		log.Println(line4)
+		log.Println(showPks)
 	}
 }
 
@@ -203,6 +203,7 @@ func (dc *DdzClient) Run() {
 			log.Println("write:", err)
 			return
 		}
+		text = strings.ReplaceAll(text, "\r", "")
 		text = strings.ReplaceAll(text, "\n", "")
 		if match, _ := regexp.MatchString("^(\\w [\\w\\d]+)|(\\w+)$", text); !match {
 			dc.ShowMessage(cm.ClientLevel, "输入无效")
