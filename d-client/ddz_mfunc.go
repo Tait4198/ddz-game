@@ -4,7 +4,6 @@ import (
 	gcm "com.github/gc-common"
 	"encoding/json"
 	"fmt"
-	"strconv"
 )
 
 func (dc *DdzClient) GameNewLandlord(cm ClientMessage) {
@@ -102,8 +101,16 @@ func (dc *DdzClient) GameCountdown(cm ClientMessage) {
 }
 
 func (dc *DdzClient) GameNextUserOps(cm ClientMessage) {
-	dc.ShowMessage(cm.Level, fmt.Sprintf("轮到[%s]操作", cm.Message))
 	dc.roundUser = cm.Message
+	if cm.Message == dc.userName {
+		dc.ShowMessage(gcm.ClientLevel, fmt.Sprintf("***请操作***"))
+		if dc.stage == gcm.StagePlayPoker {
+			dc.ShowSelfPoker()
+		}
+
+	} else {
+		dc.ShowMessage(cm.Level, fmt.Sprintf("轮到[%s]操作", cm.Message))
+	}
 }
 
 func (dc *DdzClient) GameWaitGrabLandlord(cm ClientMessage) {
@@ -145,20 +152,21 @@ func (dc *DdzClient) GameDealHolePokers(cm ClientMessage) {
 	pks := convertPokers(cm.Message)
 	dc.pokerSlice = append(dc.pokerSlice, pks...)
 	gcm.SortPoker(dc.pokerSlice, gcm.SortByScore)
-	dc.ShowSelfPoker()
 }
 
 func (dc *DdzClient) GamePlayPoker(cm ClientMessage) {
-	pks := convertPokers(cm.Message)
-	gcm.SortPoker(pks, gcm.SortByScore)
-	dc.prevPoker = pks
-	dc.lastPlay = dc.roundUser
-	ShowPoker(fmt.Sprintf("[%s]出牌:", dc.roundUser), pks, false)
+	var upp gcm.UserPlayPoker
+	if err := json.Unmarshal([]byte(cm.Message), &upp); err != nil {
+		panic(err)
+	}
+	gcm.SortPoker(upp.Pokers, gcm.SortByScore)
+	dc.prevPoker = upp.Pokers
+	dc.lastPlay = upp.Name
+	ShowPoker(fmt.Sprintf("[%s]出牌:", upp.Name), upp.Pokers, false)
 }
 
 func (dc *DdzClient) GamePlayPokerUpdate(cm ClientMessage) {
 	dc.pokerSlice = convertPokers(cm.Message)
-	dc.ShowSelfPoker()
 }
 
 func (dc *DdzClient) GamePlayPokerSkip(cm ClientMessage) {
@@ -166,17 +174,31 @@ func (dc *DdzClient) GamePlayPokerSkip(cm ClientMessage) {
 }
 
 func (dc *DdzClient) GamePlayPokerRemaining(cm ClientMessage) {
-	val, err := strconv.ParseUint(cm.Message, 10, 32)
-	if err == nil {
-		dc.ShowMessage(cm.Level, fmt.Sprintf("***注意[%s]还剩%d张手牌***", dc.roundUser, val))
+	var upr gcm.UserPokerRemaining
+	if err := json.Unmarshal([]byte(cm.Message), &upr); err != nil {
+		panic(err)
 	}
+	dc.ShowMessage(cm.Level, fmt.Sprintf("***注意[%s]还剩%d张手牌***", upr.Name, upr.Remaining))
 }
 
 func (dc *DdzClient) GameSettlement(cm ClientMessage) {
 	dc.stage = gcm.StageSettlement
 	dc.ShowMessage(cm.Level, fmt.Sprintf("***[%s]获得对局胜利***", cm.Message))
-	dc.ShowMessage(cm.Level, fmt.Sprintf("***[%s]为优胜者***", dc.roundUser))
-	dc.ShowMessage(cm.Level, "***开始结算***")
+	dc.ShowMessage(cm.Level, fmt.Sprintf("***[%s]为优胜者成为地主***", dc.roundUser))
+}
+
+func (dc *DdzClient) GamePlayPokerHostingOps(cm ClientMessage) {
+	dc.ShowMessage(cm.Level, fmt.Sprintf("[%s]托管操作出牌", cm.Message))
+}
+
+func (dc *DdzClient) GameOpsTimeout(cm ClientMessage) {
+	dc.ShowMessage(cm.Level, fmt.Sprintf("[%s]操作超时将由系统托管操作", cm.Message))
+}
+
+func (dc *DdzClient) GameStop(cm ClientMessage) {
+	dc.ShowMessage(cm.Level, "对局结束")
+	dc.DcReset()
+	dc.ShowMessage(gcm.ClientLevel, "可进行下一场对局")
 }
 
 func convertPokers(pokerJson string) []gcm.Poker {

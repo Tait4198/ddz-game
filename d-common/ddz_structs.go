@@ -18,6 +18,16 @@ type DdzPokerResult struct {
 	Len    uint
 }
 
+type UserPlayPoker struct {
+	Pokers []Poker `json:"pokers"`
+	Name   string  `json:"name"`
+}
+
+type UserPokerRemaining struct {
+	Remaining int    `json:"remaining"`
+	Name      string `json:"name"`
+}
+
 type Poker struct {
 	Suit  string
 	Level string

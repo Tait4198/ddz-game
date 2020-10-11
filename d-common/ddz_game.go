@@ -17,6 +17,11 @@ const (
 	KingBomb
 )
 
+const (
+	SScore uint = 14
+	XScore      = 15
+)
+
 // 0 a 1 b -1 无效
 func ComparePoker(aPks, bPks []Poker) int {
 	ar := GetPokerType(aPks)
@@ -62,7 +67,7 @@ func GetPokerType(pks []Poker) DdzPokerResult {
 		} else {
 			kf := true
 			for _, pk := range pks {
-				if pk.Score != 13 && pk.Score != 14 {
+				if pk.Score != XScore && pk.Score != SScore {
 					kf = false
 				}
 			}
@@ -82,7 +87,7 @@ func GetPokerType(pks []Poker) DdzPokerResult {
 			return DdzPokerResult{Three, pks[0].Score, 1}
 		}
 	case 4:
-		pkMap := getPkMap(pks)
+		pkMap := GetPkMap(pks)
 		if len(pkMap) == 1 {
 			for _, v := range pkMap {
 				if v == 4 {
@@ -107,7 +112,7 @@ func GetPokerType(pks []Poker) DdzPokerResult {
 		}
 	default:
 		SortPoker(pks, SortByScore)
-		pkMap := getPkMap(pks)
+		pkMap := GetPkMap(pks)
 		if r := checkFourWithTwo(pkMap, pks); r.PkType != Invalid {
 			return r
 		}
@@ -127,7 +132,7 @@ func GetPokerType(pks []Poker) DdzPokerResult {
 	return DdzPokerResult{Invalid, 0, 0}
 }
 
-func getPkMap(pks []Poker) map[uint]uint {
+func GetPkMap(pks []Poker) map[uint]uint {
 	pkMap := make(map[uint]uint)
 	for _, pk := range pks {
 		if v, ok := pkMap[pk.Score]; ok {

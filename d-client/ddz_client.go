@@ -14,11 +14,12 @@ import (
 )
 
 type DdzClient struct {
-	conn     *websocket.Conn
-	userName string
-	password string
-	mFuncMap map[cm.MessageType]MessageFunc
-	iFuncMap map[string]CommandFunc
+	conn      *websocket.Conn
+	userName  string
+	password  string
+	mFuncMap  map[cm.MessageType]MessageFunc
+	dmFuncMap map[cm.DdzMessageType]MessageFunc
+	iFuncMap  map[string]CommandFunc
 
 	landlord   string
 	roundUser  string
@@ -28,6 +29,15 @@ type DdzClient struct {
 
 	prevPoker []cm.Poker
 	lastPlay  string
+}
+
+func (dc *DdzClient) DcReset() {
+	dc.roundUser = ""
+	dc.isReady = false
+	dc.pokerSlice = nil
+	dc.prevPoker = nil
+	dc.lastPlay = ""
+	dc.stage = cm.StageWait
 }
 
 func (*DdzClient) ShowMessage(level cm.MessageLevel, message string) {
@@ -97,10 +107,11 @@ func (dc *DdzClient) ShowSelfPoker() {
 
 func NewDdzClient(usr, pwd string) *DdzClient {
 	dc := &DdzClient{
-		userName: usr,
-		password: pwd,
-		mFuncMap: make(map[cm.MessageType]MessageFunc),
-		iFuncMap: make(map[string]CommandFunc),
+		userName:  usr,
+		password:  pwd,
+		mFuncMap:  make(map[cm.MessageType]MessageFunc),
+		dmFuncMap: make(map[cm.DdzMessageType]MessageFunc),
+		iFuncMap:  make(map[string]CommandFunc),
 	}
 	// 房间创建
 	dc.iFuncMap["c"] = dc.CreateRoom
@@ -129,7 +140,6 @@ func NewDdzClient(usr, pwd string) *DdzClient {
 	dc.mFuncMap[cm.RoomSomeoneQuit] = dc.RoomSomeoneQuit
 	dc.mFuncMap[cm.RoomMissUser] = dc.RoomMissUser
 	dc.mFuncMap[cm.RoomNewHomeowner] = dc.RoomNewHomeowner
-	dc.mFuncMap[cm.GameNewLandlord] = dc.GameNewLandlord
 	dc.mFuncMap[cm.RoomUnableCreate] = dc.RoomUnableCreate
 	dc.mFuncMap[cm.RoomAlreadyIn] = dc.RoomAlreadyIn
 	dc.mFuncMap[cm.RoomFull] = dc.RoomFull
@@ -137,23 +147,27 @@ func NewDdzClient(usr, pwd string) *DdzClient {
 	dc.mFuncMap[cm.RoomRun] = dc.RoomRun
 	dc.mFuncMap[cm.RoomClose] = dc.RoomClose
 
-	dc.mFuncMap[cm.GameStart] = dc.GameStart
-	dc.mFuncMap[cm.GameRestart] = dc.GameRestart
-	dc.mFuncMap[cm.GameCountdown] = dc.GameCountdown
-	dc.mFuncMap[cm.GameNextUserOps] = dc.GameNextUserOps
-	dc.mFuncMap[cm.GameWaitGrabLandlord] = dc.GameWaitGrabLandlord
-	dc.mFuncMap[cm.GameGrabHostingOps] = dc.GameGrabHostingOps
-	dc.mFuncMap[cm.GameGrabLandlord] = dc.GameGrabLandlord
-	dc.mFuncMap[cm.GameNGrabLandlord] = dc.GameNGrabLandlord
-	dc.mFuncMap[cm.GameGrabLandlordEnd] = dc.GameGrabLandlordEnd
-	dc.mFuncMap[cm.GameDealPoker] = dc.GameDealPoker
-	dc.mFuncMap[cm.GameDealHolePokers] = dc.GameDealHolePokers
-	dc.mFuncMap[cm.GameShowHolePokers] = dc.GameShowHolePokers
-	dc.mFuncMap[cm.GamePlayPoker] = dc.GamePlayPoker
-	dc.mFuncMap[cm.GamePlayPokerUpdate] = dc.GamePlayPokerUpdate
-	dc.mFuncMap[cm.GamePlayPokerSkip] = dc.GamePlayPokerSkip
-	dc.mFuncMap[cm.GamePlayPokerRemaining] = dc.GamePlayPokerRemaining
-	dc.mFuncMap[cm.GameSettlement] = dc.GameSettlement
+	dc.dmFuncMap[cm.GameNewLandlord] = dc.GameNewLandlord
+	dc.dmFuncMap[cm.GameStart] = dc.GameStart
+	dc.dmFuncMap[cm.GameRestart] = dc.GameRestart
+	dc.dmFuncMap[cm.GameCountdown] = dc.GameCountdown
+	dc.dmFuncMap[cm.GameNextUserOps] = dc.GameNextUserOps
+	dc.dmFuncMap[cm.GameWaitGrabLandlord] = dc.GameWaitGrabLandlord
+	dc.dmFuncMap[cm.GameGrabHostingOps] = dc.GameGrabHostingOps
+	dc.dmFuncMap[cm.GameGrabLandlord] = dc.GameGrabLandlord
+	dc.dmFuncMap[cm.GameNGrabLandlord] = dc.GameNGrabLandlord
+	dc.dmFuncMap[cm.GameGrabLandlordEnd] = dc.GameGrabLandlordEnd
+	dc.dmFuncMap[cm.GameDealPoker] = dc.GameDealPoker
+	dc.dmFuncMap[cm.GameDealHolePokers] = dc.GameDealHolePokers
+	dc.dmFuncMap[cm.GameShowHolePokers] = dc.GameShowHolePokers
+	dc.dmFuncMap[cm.GamePlayPoker] = dc.GamePlayPoker
+	dc.dmFuncMap[cm.GamePlayPokerUpdate] = dc.GamePlayPokerUpdate
+	dc.dmFuncMap[cm.GamePlayPokerSkip] = dc.GamePlayPokerSkip
+	dc.dmFuncMap[cm.GamePlayPokerRemaining] = dc.GamePlayPokerRemaining
+	dc.dmFuncMap[cm.GameSettlement] = dc.GameSettlement
+	dc.dmFuncMap[cm.GamePlayPokerHostingOps] = dc.GamePlayPokerHostingOps
+	dc.dmFuncMap[cm.GameOpsTimeout] = dc.GameOpsTimeout
+	dc.dmFuncMap[cm.GameStop] = dc.GameStop
 	return dc
 }
 
@@ -188,6 +202,8 @@ func (dc *DdzClient) Run() {
 			}
 			if mFunc, ok := dc.mFuncMap[cMsg.Type]; ok {
 				go mFunc(cMsg)
+			} else if dmFunc, ok := dc.dmFuncMap[cm.DdzMessageType(cMsg.Type)]; ok {
+				go dmFunc(cMsg)
 			} else {
 				// 如果未找到处理方法直接输出
 				log.Printf("recv: %s", string(message))
