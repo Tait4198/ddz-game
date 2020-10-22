@@ -27,4 +27,5 @@ const (
 	RoomMissUser     MessageType = 1114
 	RoomSomeoneQuit  MessageType = 1115
 	RoomNewHomeowner MessageType = 1116
+	GetRoomInfo      MessageType = 1200
 )

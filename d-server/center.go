@@ -47,6 +47,8 @@ func newCenter() *Center {
 	center.funcMap[cm.ClientRegister] = center.clientRegister
 	// 客户端断开连接
 	center.funcMap[cm.ClientUnregister] = center.clientUnregister
+	// 获取房间信息
+	center.funcMap[cm.GetRoomInfo] = center.getRoomInfo
 
 	// 退出房间
 	center.funcMap[cm.RoomQuit] = center.roomQuit
@@ -225,6 +227,21 @@ func (c *Center) roomDisband(msg ServerMessage) {
 		// 向房间发送close消息
 		msg.room.MessageChan() <- RoomMessage{messageType: cm.RoomClose}
 	}
+}
+
+func (c *Center) getRoomInfo(msg ServerMessage) {
+	var resultRooms []cm.ResultRoom
+	for _, room := range c.roomMap {
+		var clients []string
+		for _, c := range room.ClientMap() {
+			clients = append(clients, c.userName)
+		}
+		rr := cm.ResultRoom{Id: uint(room.RoomId()), Homeowner: room.Homeowner().userName,
+			IsRun: room.IsRun(), Clients: clients}
+		resultRooms = append(resultRooms, rr)
+	}
+	msg.client.messageChan <- ClientMessage{Level: cm.CenterLevel, Type: cm.GetRoomInfo,
+		Status: true, Message: cm.StructToJsonString(resultRooms)}
 }
 
 func (c *Center) nextRoomId() RoomId {

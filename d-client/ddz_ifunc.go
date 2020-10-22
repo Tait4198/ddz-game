@@ -22,9 +22,13 @@ func (dc *DdzClient) JoinRoom(val string) {
 }
 
 func (dc *DdzClient) QuitRoom(val string) {
-	err := dc.conn.WriteJSON(SendMessage{cm.CenterLevel, cm.RoomQuit, val})
-	if err != nil {
-		log.Fatal("QuitRoom error:", err)
+	if dc.stage == cm.StageWait {
+		err := dc.conn.WriteJSON(SendMessage{cm.CenterLevel, cm.RoomQuit, val})
+		if err != nil {
+			log.Fatal("QuitRoom error:", err)
+		}
+	} else {
+		dc.ShowMessage(cm.ClientLevel, "操作无效")
 	}
 }
 
@@ -126,12 +130,41 @@ func (dc *DdzClient) PlayPoker(val string) {
 	}
 }
 
+func (dc *DdzClient) ShowHelp(val string) {
+	helpStr := "\n***游戏帮助***\n"
+	var tipHelpSl []string
+	tipHelpSl = append(tipHelpSl, "流程:创建/加入房间 -> 准备操作 -> 开始游戏")
+	tipHelpSl = append(tipHelpSl, "特殊牌型 S = 小王 / X = 大王 / 0或10 = 10")
+	for i, s := range tipHelpSl {
+		helpStr += fmt.Sprintf("%d. %s\n", i+1, s)
+	}
+	helpStr += "***命令帮助***\n"
+	var cmdHelpSl []string
+	cmdHelpSl = append(cmdHelpSl, "创建房间 -> c")
+	cmdHelpSl = append(cmdHelpSl, "退出房间 -> q")
+	cmdHelpSl = append(cmdHelpSl, "加入指定房间 -> j 房间数字id")
+	cmdHelpSl = append(cmdHelpSl, "房间内准备或取消 -> r")
+	cmdHelpSl = append(cmdHelpSl, "游戏内出牌 -> p 牌型对应数字或字母,如 p 334455 / p 90jqk (忽略大小写)")
+	cmdHelpSl = append(cmdHelpSl, "游戏内跳过出牌 -> p (仅输入p)")
+	cmdHelpSl = append(cmdHelpSl, "显示当前手牌信息 -> s p")
+	cmdHelpSl = append(cmdHelpSl, "显示当前地主信息 -> s l")
+	cmdHelpSl = append(cmdHelpSl, "显示所有房间信息 -> s r")
+	for i, s := range cmdHelpSl {
+		helpStr += fmt.Sprintf("%d. %s\n", i+1, s)
+	}
+	dc.ShowMessage(cm.ClientLevel, helpStr)
+}
+
 func (dc *DdzClient) ShowData(val string) {
 	switch val {
 	case "l":
 		ShowLandlordData(dc)
 	case "p":
 		ShowSelfPokerData(dc)
+	case "r":
+		ShowAllRoomData(dc)
+	default:
+		dc.ShowMessage(cm.ClientLevel, "无效命令")
 	}
 }
 
@@ -148,5 +181,16 @@ func ShowLandlordData(dc *DdzClient) {
 }
 
 func ShowSelfPokerData(dc *DdzClient) {
-	dc.ShowSelfPoker()
+	if dc.stage == cm.StagePlayPoker {
+		dc.ShowSelfPoker()
+	} else {
+		dc.ShowMessage(cm.ClientLevel, "当前不在游戏阶段")
+	}
+}
+
+func ShowAllRoomData(dc *DdzClient) {
+	err := dc.conn.WriteJSON(SendMessage{cm.CenterLevel, cm.GetRoomInfo, ""})
+	if err != nil {
+		log.Fatal("GetRoomInfo error:", err)
+	}
 }

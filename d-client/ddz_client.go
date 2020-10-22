@@ -15,6 +15,8 @@ import (
 
 type DdzClient struct {
 	conn      *websocket.Conn
+	host      string
+	port      int
 	userName  string
 	password  string
 	mFuncMap  map[cm.MessageType]MessageFunc
@@ -105,10 +107,12 @@ func (dc *DdzClient) ShowSelfPoker() {
 	ShowPoker("手牌如下:", dc.pokerSlice, false)
 }
 
-func NewDdzClient(usr, pwd string) *DdzClient {
+func NewDdzClient(usr, host string, port int) *DdzClient {
 	dc := &DdzClient{
 		userName:  usr,
-		password:  pwd,
+		password:  "123456",
+		host:      host,
+		port:      port,
 		mFuncMap:  make(map[cm.MessageType]MessageFunc),
 		dmFuncMap: make(map[cm.DdzMessageType]MessageFunc),
 		iFuncMap:  make(map[string]CommandFunc),
@@ -129,6 +133,8 @@ func NewDdzClient(usr, pwd string) *DdzClient {
 	dc.iFuncMap["p"] = dc.PlayPoker
 	// [s p] 显示手牌 [s l]显示房主
 	dc.iFuncMap["s"] = dc.ShowData
+	// 帮助
+	dc.iFuncMap["h"] = dc.ShowHelp
 
 	// 消息监听
 	dc.mFuncMap[cm.RoomCreate] = dc.RoomCreate
@@ -146,6 +152,7 @@ func NewDdzClient(usr, pwd string) *DdzClient {
 	dc.mFuncMap[cm.RoomUnableExit] = dc.RoomUnableExit
 	dc.mFuncMap[cm.RoomRun] = dc.RoomRun
 	dc.mFuncMap[cm.RoomClose] = dc.RoomClose
+	dc.mFuncMap[cm.GetRoomInfo] = dc.GetRoomInfo
 
 	dc.dmFuncMap[cm.GameNewLandlord] = dc.GameNewLandlord
 	dc.dmFuncMap[cm.GameStart] = dc.GameStart
@@ -168,11 +175,12 @@ func NewDdzClient(usr, pwd string) *DdzClient {
 	dc.dmFuncMap[cm.GamePlayPokerHostingOps] = dc.GamePlayPokerHostingOps
 	dc.dmFuncMap[cm.GameOpsTimeout] = dc.GameOpsTimeout
 	dc.dmFuncMap[cm.GameStop] = dc.GameStop
+
 	return dc
 }
 
 func (dc *DdzClient) Run() {
-	u := url.URL{Scheme: "ws", Host: "localhost:8080", Path: "/ws"}
+	u := url.URL{Scheme: "ws", Host: fmt.Sprintf("%s:%d", dc.host, dc.port), Path: "/ws"}
 	q := u.Query()
 	q.Set("usr", dc.userName)
 	q.Set("pwd", dc.password)
@@ -182,6 +190,10 @@ func (dc *DdzClient) Run() {
 	if err != nil {
 		log.Fatal("dial:", err)
 		return
+	} else {
+		dc.ShowMessage(cm.ClientLevel, fmt.Sprintf("已连接至服务器 %s:%d", dc.host, dc.port))
+		dc.ShowMessage(cm.CenterLevel, fmt.Sprintf("当前用户 %s", dc.userName))
+		dc.ShowMessage(cm.CenterLevel, "输入 h 查看帮助信息")
 	}
 	dc.conn = c
 	defer dc.conn.Close()

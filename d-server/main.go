@@ -35,6 +35,7 @@ func main() {
 
 		if err1 != nil || err2 != nil {
 			w.WriteHeader(403)
+			log.Println("usr或pwd为空")
 			return
 		}
 
@@ -50,30 +51,6 @@ func main() {
 			return
 		}
 		newClient(usr, clientId, center, conn)
-		//c := newClient(usr, clientId, center, conn)
-
-		//room := newDdzRoom(c, center)
-		//room.(*DdzRoom).RandomPokerSlice()
-		//
-		//var bPks []cm.Poker
-		//bPks = append(bPks, cm.Poker{Score: 1})
-		//bPks = append(bPks, cm.Poker{Score: 1})
-		//bPks = append(bPks, cm.Poker{Score: 1})
-		//bPks = append(bPks, cm.Poker{Score: 1})
-		//bPks = append(bPks, cm.Poker{Score: 9})
-		//bPks = append(bPks, cm.Poker{Score: 10})
-		//bPks = append(bPks, cm.Poker{Score: 11})
-		//bPks = append(bPks, cm.Poker{Score: 14})
-		//bPks = append(bPks, cm.Poker{Score: 15})
-		//
-		//var aPks []cm.Poker
-		//aPks = append(aPks, cm.Poker{Score: 2})
-		//aPks = append(aPks, cm.Poker{Score: 2})
-		//aPks = append(aPks, cm.Poker{Score: 2})
-		//aPks = append(aPks, cm.Poker{Score: 2})
-		//for _, v := range PkAutoPlay(aPks, bPks) {
-		//	fmt.Println(bPks[v])
-		//}
 	})
 	_ = http.ListenAndServe(":8080", nil)
 }

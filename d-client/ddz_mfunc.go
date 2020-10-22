@@ -201,6 +201,26 @@ func (dc *DdzClient) GameStop(cm ClientMessage) {
 	dc.ShowMessage(gcm.ClientLevel, "可进行下一场对局")
 }
 
+func (dc *DdzClient) GetRoomInfo(message ClientMessage) {
+	var rrs []gcm.ResultRoom
+	if err := json.Unmarshal([]byte(message.Message), &rrs); err != nil {
+		panic(err)
+	}
+	roomInfoStr := "\n"
+	for _, rr := range rrs {
+		isRun := "正在等待"
+		if rr.IsRun {
+			isRun = "正在对局"
+		}
+		clientNames := ""
+		for _, cn := range rr.Clients {
+			clientNames += cn + " "
+		}
+		roomInfoStr += fmt.Sprintf("Id: %d %s 房主: %s 用户: %s\n", rr.Id, isRun, rr.Homeowner, clientNames)
+	}
+	dc.ShowMessage(message.Level, roomInfoStr)
+}
+
 func convertPokers(pokerJson string) []gcm.Poker {
 	var pks []gcm.Poker
 	if err := json.Unmarshal([]byte(pokerJson), &pks); err != nil {
