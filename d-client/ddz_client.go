@@ -49,7 +49,7 @@ func (*DdzClient) ShowMessage(level cm.MessageLevel, message string) {
 	case cm.RoomLevel:
 		log.Printf("[房间消息]%s", message)
 	case cm.GameLevel:
-		log.Printf("[游戏消息]%s", message)
+		log.Printf("[对局消息]%s", message)
 	case cm.ClientLevel:
 		log.Printf("[客户端消息]%s", message)
 	}

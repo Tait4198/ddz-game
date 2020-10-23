@@ -45,7 +45,7 @@ func (c *DdzClient) SelfClient() *DdzClient {
 }
 
 // 回合时间
-const RoundTimeVal = 30 * 2
+const RoundTimeVal = 60 * 2
 const SuitStr = "♠|♥|♣|♦"
 const LevelStr = "3|4|5|6|7|8|9|10|J|Q|K|A|2"
 const JokerS = "S"

@@ -164,7 +164,7 @@ func (dc *DdzClient) GamePlayPoker(cm ClientMessage) {
 	gcm.SortPoker(upp.Pokers, gcm.SortByScore)
 	dc.prevPoker = upp.Pokers
 	dc.lastPlay = upp.Name
-	ShowPoker(fmt.Sprintf("[%s]出牌:", upp.Name), upp.Pokers, false)
+	ShowPoker(fmt.Sprintf("***[%s]出牌***", upp.Name), upp.Pokers, false)
 }
 
 func (dc *DdzClient) GamePlayPokerUpdate(cm ClientMessage) {
