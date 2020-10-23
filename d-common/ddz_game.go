@@ -8,6 +8,7 @@ const (
 	Double
 	Three
 	ThreeWithOne
+	ThreeWithTwo
 	FourWithTwo
 	Straight
 	ContDouble
@@ -113,6 +114,9 @@ func GetPokerType(pks []Poker) DdzPokerResult {
 	default:
 		SortPoker(pks, SortByScore)
 		pkMap := GetPkMap(pks)
+		if r := checkThreeWithTwo(pkMap, pks); r.PkType != Invalid {
+			return r
+		}
 		if r := checkFourWithTwo(pkMap, pks); r.PkType != Invalid {
 			return r
 		}
@@ -142,6 +146,18 @@ func GetPkMap(pks []Poker) map[uint]uint {
 		}
 	}
 	return pkMap
+}
+
+func checkThreeWithTwo(pkMap map[uint]uint, pks []Poker) DdzPokerResult {
+	pkMapLen := len(pkMap)
+	if pkMapLen == 2 {
+		for k, v := range pkMap {
+			if v == 3 {
+				return DdzPokerResult{ThreeWithTwo, k, 1}
+			}
+		}
+	}
+	return DdzPokerResult{Invalid, 0, 0}
 }
 
 func checkFourWithTwo(pkMap map[uint]uint, pks []Poker) DdzPokerResult {

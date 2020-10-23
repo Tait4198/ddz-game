@@ -60,9 +60,11 @@ func PkAutoPlay(prevPks, pks []cm.Poker) []int {
 		case cm.Single, cm.Double, cm.Three, cm.Bomb:
 			resultIdx = simpleCase(uint(len(prevPks)), dpr.Score, ss, pks)
 		case cm.ThreeWithOne:
-			resultIdx = withCase(3, 1, dpr.Score, ss, pks)
+			resultIdx = withCase(3, 1, dpr.Score, false, ss, pks)
+		case cm.ThreeWithTwo:
+			resultIdx = withCase(3, 2, dpr.Score, true, ss, pks)
 		case cm.FourWithTwo:
-			resultIdx = withCase(4, 2, dpr.Score, ss, pks)
+			resultIdx = withCase(4, 2, dpr.Score, false, ss, pks)
 		case cm.Straight:
 			resultIdx = contCase(1, false, dpr, ss, pks)
 		case cm.ContDouble:
@@ -110,7 +112,7 @@ func simpleCase(pkSize, dprScore uint, ss []PkScoreSize, pks []cm.Poker) []int {
 	return resultIdx
 }
 
-func withCase(pkSize, withSize, dprScore uint, ss []PkScoreSize, pks []cm.Poker) []int {
+func withCase(pkSize, withSize, dprScore uint, withSame bool, ss []PkScoreSize, pks []cm.Poker) []int {
 	var resultIdx []int
 	fourScore := matchAccScore(pkSize, dprScore, ss, true)
 	if fourScore == 0 {
@@ -126,13 +128,39 @@ func withCase(pkSize, withSize, dprScore uint, ss []PkScoreSize, pks []cm.Poker)
 			}
 		}
 	}
-	var index uint = 0
-	for i := range pks {
-		if _, ok := cPkMap[i]; !ok {
-			resultIdx = append(resultIdx, i)
-			index++
-			if index == withSize {
+	if withSame {
+		pkMap := cm.GetPkMap(pks)
+		var sameScore uint = 0
+		for k, v := range pkMap {
+			if v >= withSize {
+				sameScore = k
 				break
+			}
+		}
+		if sameScore == 0 {
+			return []int{}
+		}
+		var index uint = 0
+		for i, pk := range pks {
+			if _, ok := cPkMap[i]; !ok {
+				if pk.Score == sameScore {
+					resultIdx = append(resultIdx, i)
+					index++
+					if index == withSize {
+						break
+					}
+				}
+			}
+		}
+	} else {
+		var index uint = 0
+		for i := range pks {
+			if _, ok := cPkMap[i]; !ok {
+				resultIdx = append(resultIdx, i)
+				index++
+				if index == withSize {
+					break
+				}
 			}
 		}
 	}

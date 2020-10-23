@@ -28,6 +28,8 @@ func (dc *DdzClient) RoomInvalid(cm ClientMessage) {
 
 func (dc *DdzClient) RoomQuit(cm ClientMessage) {
 	dc.ShowMessage(cm.Level, "退出房间")
+	// 重置状态
+	dc.DcReset()
 }
 
 func (dc *DdzClient) RoomMissUser(cm ClientMessage) {

@@ -28,6 +28,10 @@ type DdzClient struct {
 	PokerSlice []cm.Poker
 }
 
+func (c *DdzClient) NextClientNoBroadcast() *DdzClient {
+	return c.Next
+}
+
 func (c *DdzClient) NextClient() *DdzClient {
 	c.currentRoom.BroadcastL(c.Next.userName, cm.MessageType(cm.GameNextUserOps), cm.GameLevel)
 	log.Printf("轮到[%s]操作", c.Next.userName)
@@ -69,11 +73,9 @@ type DdzRoom struct {
 	// 最后抢地主client
 	lastGrab *DdzClient
 	// 抢地主计数
-	grabIndex uint
-	// 默认地主是否抢地主
-	landlordGrab bool
-	// 其他client是否抢地主
-	otherGrab bool
+	grabStageCount uint
+	// 客户端确认抢地主统计
+	clientGrabMap map[string]uint
 
 	// 前一位出牌
 	prevPokers []cm.Poker
@@ -140,11 +142,21 @@ func stageGrab(auto bool, r *DdzRoom) {
 		r.BroadcastL(r.roundClient.userName, cm.MessageType(cm.GameGrabHostingOps), cm.GameLevel)
 		r.GameGrabLandlord(DdzRoomMessage{r.roundClient, "false", cm.GameGrabLandlord})
 	}
-	if r.grabIndex < 4 && r.stage == cm.StageGrabLandlord {
+	if r.stage == cm.StageGrabLandlord {
 		if r.roundClient == nil {
 			r.roundClient = r.landlord.SelfClient()
 		} else {
-			r.roundClient = r.roundClient.NextClient()
+			if r.grabStageCount < 3 {
+				r.roundClient = r.roundClient.NextClient()
+			} else {
+				for {
+					r.roundClient = r.roundClient.NextClientNoBroadcast()
+					if v, ok := r.clientGrabMap[r.roundClient.userName]; ok && v == 1 {
+						r.roundClient.SelfClient()
+						break
+					}
+				}
+			}
 		}
 		log.Printf("等待用户[%s]抢地主", r.roundClient.userName)
 		r.roundClient.messageChan <- ClientMessage{cm.GameLevel,
@@ -209,17 +221,22 @@ func (r *DdzRoom) GameGrabLandlord(msg DdzRoomMessage) {
 		r.lastGrab = r.roundClient
 		log.Printf("用户[%s]抢地主", r.lastGrab.userName)
 		r.BroadcastL(r.lastGrab.userName, cm.MessageType(cm.GameGrabLandlord), cm.GameLevel)
-		if r.grabIndex == 0 {
-			r.landlordGrab = true
-		} else if r.grabIndex < 3 {
-			r.otherGrab = true
-		}
+		//
+		r.clientGrabMap[msg.client.userName] = r.clientGrabMap[msg.client.userName] + 1
 	} else {
 		log.Printf("用户[%s]不抢地主", r.roundClient.userName)
 		r.BroadcastL(r.roundClient.userName, cm.MessageType(cm.GameNGrabLandlord), cm.GameLevel)
 	}
-	r.grabIndex += 1
-	if r.grabIndex == 4 || (r.grabIndex == 3 && (!r.landlordGrab || !r.otherGrab)) {
+	r.grabStageCount += 1
+	doubleGrabUser := ""
+	var clientGrabCount uint = 0
+	for k, v := range r.clientGrabMap {
+		clientGrabCount += v
+		if v == 2 {
+			doubleGrabUser = k
+		}
+	}
+	if doubleGrabUser != "" || (clientGrabCount <= 1 && r.grabStageCount == 3) || r.grabStageCount >= 4 {
 		if r.lastGrab == nil {
 			// 重新开局'
 			log.Println("未选出地主重新开局")
@@ -329,9 +346,8 @@ func (r *DdzRoom) GameStart(reRl bool) {
 	r.holePokers = nil
 
 	r.lastGrab = nil
-	r.grabIndex = 0
-	r.landlordGrab = false
-	r.otherGrab = false
+	r.clientGrabMap = make(map[string]uint)
+	r.grabStageCount = 0
 
 	r.lastPlay = nil
 	r.prevPokers = nil
@@ -348,6 +364,7 @@ func (r *DdzRoom) GameStart(reRl bool) {
 
 	for _, dc := range r.ddzClients {
 		dc.PokerSlice = nil
+		r.clientGrabMap[dc.userName] = 0
 	}
 
 	log.Printf("房间[%d]开始发牌", r.RoomId())
