@@ -39,6 +39,7 @@ func (dc *DdzClient) DcReset() {
 	dc.pokerSlice = nil
 	dc.prevPoker = nil
 	dc.lastPlay = ""
+	dc.landlord = ""
 	dc.stage = cm.StageWait
 }
 

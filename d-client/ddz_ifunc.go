@@ -177,7 +177,11 @@ func GrabLandlord(dc *DdzClient, val bool) {
 }
 
 func ShowLandlordData(dc *DdzClient) {
-	dc.ShowMessage(cm.ClientLevel, fmt.Sprintf("当前房主为[%s]", dc.landlord))
+	if dc.landlord != "" {
+		dc.ShowMessage(cm.ClientLevel, fmt.Sprintf("当前地主为[%s]", dc.landlord))
+	} else {
+		dc.ShowMessage(cm.ClientLevel, "该命令仅在对局选出地主后有效")
+	}
 }
 
 func ShowSelfPokerData(dc *DdzClient) {
