@@ -134,6 +134,7 @@ func (dc *DdzClient) GameNGrabLandlord(cm ClientMessage) {
 
 func (dc *DdzClient) GameGrabLandlordEnd(cm ClientMessage) {
 	dc.ShowMessage(cm.Level, fmt.Sprintf("***地主用户[%s]***", cm.Message))
+
 	dc.landlord = cm.Message
 	dc.stage = gcm.StagePlayPoker
 }
@@ -147,7 +148,7 @@ func (dc *DdzClient) GameDealPoker(cm ClientMessage) {
 func (dc *DdzClient) GameShowHolePokers(cm ClientMessage) {
 	pks := convertPokers(cm.Message)
 	gcm.SortPoker(pks, gcm.SortByScore)
-	ShowPoker("底牌:", pks, false)
+	ShowPoker("底牌:", pks, false, dc.simplify)
 }
 
 func (dc *DdzClient) GameDealHolePokers(cm ClientMessage) {
@@ -164,7 +165,7 @@ func (dc *DdzClient) GamePlayPoker(cm ClientMessage) {
 	gcm.SortPoker(upp.Pokers, gcm.SortByScore)
 	dc.prevPoker = upp.Pokers
 	dc.lastPlay = upp.Name
-	ShowPoker(fmt.Sprintf("***[%s]出牌***", upp.Name), upp.Pokers, false)
+	ShowPoker(fmt.Sprintf("***[%s]出牌***", upp.Name), upp.Pokers, false, dc.simplify)
 }
 
 func (dc *DdzClient) GamePlayPokerUpdate(cm ClientMessage) {
@@ -203,24 +204,38 @@ func (dc *DdzClient) GameStop(cm ClientMessage) {
 	dc.ShowMessage(gcm.ClientLevel, "可进行下一场对局")
 }
 
-func (dc *DdzClient) GetRoomInfo(message ClientMessage) {
+func (dc *DdzClient) GetCurRoomInfo(message ClientMessage) {
+	var rr gcm.ResultRoom
+	if err := json.Unmarshal([]byte(message.Message), &rr); err != nil {
+		panic(err)
+	}
+	roomInfoStr := "当前房间信息\n"
+	roomInfoStr += rr.String()
+	dc.ShowMessage(message.Level, roomInfoStr)
+}
+
+func (dc *DdzClient) GetAllRoomInfo(message ClientMessage) {
 	var rrs []gcm.ResultRoom
 	if err := json.Unmarshal([]byte(message.Message), &rrs); err != nil {
 		panic(err)
 	}
-	roomInfoStr := "\n"
+	roomInfoStr := "所有房间信息\n"
 	for _, rr := range rrs {
-		isRun := "正在等待"
-		if rr.IsRun {
-			isRun = "正在对局"
-		}
-		clientNames := ""
-		for _, cn := range rr.Clients {
-			clientNames += cn + " "
-		}
-		roomInfoStr += fmt.Sprintf("Id: %d %s 房主: %s 用户: %s\n", rr.Id, isRun, rr.Homeowner, clientNames)
+		roomInfoStr += rr.String()
 	}
 	dc.ShowMessage(message.Level, roomInfoStr)
+}
+
+func (dc *DdzClient) GamePokerRemaining(message ClientMessage) {
+	var us []gcm.UserPokerRemaining
+	if err := json.Unmarshal([]byte(message.Message), &us); err != nil {
+		panic(err)
+	}
+	uprStr := "用户剩余卡牌\n"
+	for _, upr := range us {
+		uprStr += fmt.Sprintf("%s[%d]张 ", upr.Name, upr.Remaining)
+	}
+	dc.ShowMessage(message.Level, uprStr)
 }
 
 func convertPokers(pokerJson string) []gcm.Poker {

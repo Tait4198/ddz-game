@@ -147,8 +147,10 @@ func (dc *DdzClient) ShowHelp(val string) {
 	cmdHelpSl = append(cmdHelpSl, "游戏内出牌 -> p 牌型对应数字或字母,如 p 334455 / p 90jqk (忽略大小写)")
 	cmdHelpSl = append(cmdHelpSl, "游戏内跳过出牌 -> p (仅输入p)")
 	cmdHelpSl = append(cmdHelpSl, "显示当前手牌信息 -> s p")
+	cmdHelpSl = append(cmdHelpSl, "显示当前剩余手牌 -> s s")
 	cmdHelpSl = append(cmdHelpSl, "显示当前地主信息 -> s l")
 	cmdHelpSl = append(cmdHelpSl, "显示所有房间信息 -> s r")
+	cmdHelpSl = append(cmdHelpSl, "显示当前房间信息 -> s cr")
 	for i, s := range cmdHelpSl {
 		helpStr += fmt.Sprintf("%d. %s\n", i+1, s)
 	}
@@ -163,6 +165,10 @@ func (dc *DdzClient) ShowData(val string) {
 		ShowSelfPokerData(dc)
 	case "r":
 		ShowAllRoomData(dc)
+	case "cr":
+		ShowCurRoomData(dc)
+	case "s":
+		ShowRemainingPokerData(dc)
 	default:
 		dc.ShowMessage(cm.ClientLevel, "无效命令")
 	}
@@ -188,13 +194,32 @@ func ShowSelfPokerData(dc *DdzClient) {
 	if dc.stage == cm.StagePlayPoker {
 		dc.ShowSelfPoker()
 	} else {
-		dc.ShowMessage(cm.ClientLevel, "当前不在游戏阶段")
+		dc.ShowMessage(cm.ClientLevel, "当前不在对局阶段")
 	}
 }
 
 func ShowAllRoomData(dc *DdzClient) {
-	err := dc.conn.WriteJSON(SendMessage{cm.CenterLevel, cm.GetRoomInfo, ""})
+	err := dc.conn.WriteJSON(SendMessage{cm.CenterLevel, cm.GetAllRoomInfo, ""})
 	if err != nil {
-		log.Fatal("GetRoomInfo error:", err)
+		log.Fatal("GetAllRoomInfo error:", err)
+	}
+}
+
+func ShowCurRoomData(dc *DdzClient) {
+	err := dc.conn.WriteJSON(SendMessage{cm.CenterLevel, cm.GetCurRoomInfo, ""})
+	if err != nil {
+		log.Fatal("GetCurRoomInfo error:", err)
+	}
+}
+
+func ShowRemainingPokerData(dc *DdzClient) {
+	if dc.stage == cm.StagePlayPoker {
+		gm := GameMessage{"", cm.GamePokerRemaining}
+		err := dc.conn.WriteJSON(SendMessage{cm.RoomLevel, cm.RoomGameMessage, cm.StructToJsonString(gm)})
+		if err != nil {
+			log.Fatal("ShowRemainingPokerData error:", err)
+		}
+	} else {
+		dc.ShowMessage(cm.ClientLevel, "当前不在对局阶段")
 	}
 }

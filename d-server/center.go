@@ -48,7 +48,9 @@ func newCenter() *Center {
 	// 客户端断开连接
 	center.funcMap[cm.ClientUnregister] = center.clientUnregister
 	// 获取房间信息
-	center.funcMap[cm.GetRoomInfo] = center.getRoomInfo
+	center.funcMap[cm.GetAllRoomInfo] = center.getAllRoomInfo
+	// 获取当前房间信息
+	center.funcMap[cm.GetCurRoomInfo] = center.getCurRoomInfo
 
 	// 退出房间
 	center.funcMap[cm.RoomQuit] = center.roomQuit
@@ -229,19 +231,35 @@ func (c *Center) roomDisband(msg ServerMessage) {
 	}
 }
 
-func (c *Center) getRoomInfo(msg ServerMessage) {
+func (c *Center) getAllRoomInfo(msg ServerMessage) {
 	var resultRooms []cm.ResultRoom
 	for _, room := range c.roomMap {
-		var clients []string
-		for _, c := range room.ClientMap() {
-			clients = append(clients, c.userName)
+		var clients []cm.ResultClient
+		for k, c := range room.ClientMap() {
+			if v, ok := room.ClientReadyMap()[k]; ok {
+				clients = append(clients, cm.ResultClient{Username: c.userName, Ready: v})
+			}
 		}
 		rr := cm.ResultRoom{Id: uint(room.RoomId()), Homeowner: room.Homeowner().userName,
 			IsRun: room.IsRun(), Clients: clients}
 		resultRooms = append(resultRooms, rr)
 	}
-	msg.client.messageChan <- ClientMessage{Level: cm.CenterLevel, Type: cm.GetRoomInfo,
+	msg.client.messageChan <- ClientMessage{Level: cm.CenterLevel, Type: cm.GetAllRoomInfo,
 		Status: true, Message: cm.StructToJsonString(resultRooms)}
+}
+
+func (c *Center) getCurRoomInfo(msg ServerMessage) {
+	curRoom := msg.client.currentRoom
+	var clients []cm.ResultClient
+	for k, c := range curRoom.ClientMap() {
+		if v, ok := curRoom.ClientReadyMap()[k]; ok {
+			clients = append(clients, cm.ResultClient{Username: c.userName, Ready: v})
+		}
+	}
+	rr := cm.ResultRoom{Id: uint(curRoom.RoomId()), Homeowner: curRoom.Homeowner().userName,
+		IsRun: curRoom.IsRun(), Clients: clients}
+	msg.client.messageChan <- ClientMessage{Level: cm.CenterLevel, Type: cm.GetCurRoomInfo,
+		Status: true, Message: cm.StructToJsonString(rr)}
 }
 
 func (c *Center) nextRoomId() RoomId {

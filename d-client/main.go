@@ -4,14 +4,16 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"strconv"
 )
 
 func main() {
-	var name, host string
+	var name, host, simplify string
 	var port int
 	required := []string{"n"}
 
 	flag.StringVar(&name, "n", "ddz", "连接用户名")
+	flag.StringVar(&simplify, "simplify", "true", "简化显示")
 	flag.StringVar(&host, "host", "localhost", "服务器地址")
 	flag.IntVar(&port, "port", 8080, "服务器端口")
 	flag.Parse()
@@ -30,6 +32,11 @@ func main() {
 		os.Exit(-1)
 	}
 
-	dc := NewDdzClient(name, host, port)
+	simplifyBool, err := strconv.ParseBool(simplify)
+	if err != nil {
+		simplifyBool = false
+	}
+
+	dc := NewDdzClient(name, host, port, simplifyBool)
 	dc.Run()
 }

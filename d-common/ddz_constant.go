@@ -33,4 +33,5 @@ const (
 	GamePlayPokerInvalid    DdzMessageType = 2113 // 出牌无效
 	GamePlayPokerRemaining  DdzMessageType = 2114 // 剩余手牌提示
 	GameSettlement          DdzMessageType = 2115 // 游戏结算
+	GamePokerRemaining      DdzMessageType = 2116 // 显示玩家剩余卡牌数量
 )

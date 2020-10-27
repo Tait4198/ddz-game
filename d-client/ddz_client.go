@@ -19,6 +19,7 @@ type DdzClient struct {
 	port      int
 	userName  string
 	password  string
+	simplify  bool
 	mFuncMap  map[cm.MessageType]MessageFunc
 	dmFuncMap map[cm.DdzMessageType]MessageFunc
 	iFuncMap  map[string]CommandFunc
@@ -66,11 +67,14 @@ func fmtSprint(str string) string {
 	}
 }
 
-func ShowPoker(title string, pks []cm.Poker, showIndex bool) {
+func ShowPoker(title string, pks []cm.Poker, showIndex, simplify bool) {
 	// ┌ └ ┐ ┘ ─ │ ├ ┤ ┬ ┴ ┼
 	if pks != nil {
 		var line0 = "┌"
 		var line1 = "│"
+		if simplify {
+			line1 = ""
+		}
 		var line2 = "│"
 		var line3 = "│"
 		var line4 = "└"
@@ -82,14 +86,22 @@ func ShowPoker(title string, pks []cm.Poker, showIndex bool) {
 			line4 += "──"
 			if i < len(pks)-1 {
 				line0 += "┬"
-				line1 += "│"
+				if simplify {
+					line1 += " "
+				} else {
+					line1 += "│"
+				}
 				line2 += "│"
 				line3 += "│"
 				line4 += "┴"
 			}
 		}
 		line0 += "┐"
-		line1 += "│"
+		if simplify {
+			line1 += ""
+		} else {
+			line1 += "│"
+		}
 		line2 += "│"
 		line3 += "│"
 		line4 += "┘"
@@ -97,6 +109,8 @@ func ShowPoker(title string, pks []cm.Poker, showIndex bool) {
 		var showPks string
 		if showIndex {
 			showPks = title + "\n" + line0 + "\n" + line1 + "\n" + line2 + "\n" + line3 + "\n" + line4
+		} else if simplify {
+			showPks = title + "\n" + line1
 		} else {
 			showPks = title + "\n" + line0 + "\n" + line1 + "\n" + line2 + "\n" + line4
 		}
@@ -105,15 +119,16 @@ func ShowPoker(title string, pks []cm.Poker, showIndex bool) {
 }
 
 func (dc *DdzClient) ShowSelfPoker() {
-	ShowPoker("手牌如下:", dc.pokerSlice, false)
+	ShowPoker("手牌如下:", dc.pokerSlice, false, dc.simplify)
 }
 
-func NewDdzClient(usr, host string, port int) *DdzClient {
+func NewDdzClient(usr, host string, port int, simplify bool) *DdzClient {
 	dc := &DdzClient{
 		userName:  usr,
 		password:  "123456",
 		host:      host,
 		port:      port,
+		simplify:  simplify,
 		mFuncMap:  make(map[cm.MessageType]MessageFunc),
 		dmFuncMap: make(map[cm.DdzMessageType]MessageFunc),
 		iFuncMap:  make(map[string]CommandFunc),
@@ -132,7 +147,8 @@ func NewDdzClient(usr, host string, port int) *DdzClient {
 	dc.iFuncMap["n"] = dc.NoCommand
 	// 出牌或跳过出牌
 	dc.iFuncMap["p"] = dc.PlayPoker
-	// [s p] 显示手牌 [s l]显示房主
+	// [s p] 显示手牌 [s l] 显示地主 [s s] 显示剩余手牌数量
+	// [s r] 显示房间 [s cr] 显示当前房间
 	dc.iFuncMap["s"] = dc.ShowData
 	// 帮助
 	dc.iFuncMap["h"] = dc.ShowHelp
@@ -153,7 +169,8 @@ func NewDdzClient(usr, host string, port int) *DdzClient {
 	dc.mFuncMap[cm.RoomUnableExit] = dc.RoomUnableExit
 	dc.mFuncMap[cm.RoomRun] = dc.RoomRun
 	dc.mFuncMap[cm.RoomClose] = dc.RoomClose
-	dc.mFuncMap[cm.GetRoomInfo] = dc.GetRoomInfo
+	dc.mFuncMap[cm.GetAllRoomInfo] = dc.GetAllRoomInfo
+	dc.mFuncMap[cm.GetCurRoomInfo] = dc.GetCurRoomInfo
 
 	dc.dmFuncMap[cm.GameNewLandlord] = dc.GameNewLandlord
 	dc.dmFuncMap[cm.GameStart] = dc.GameStart
@@ -176,6 +193,7 @@ func NewDdzClient(usr, host string, port int) *DdzClient {
 	dc.dmFuncMap[cm.GamePlayPokerHostingOps] = dc.GamePlayPokerHostingOps
 	dc.dmFuncMap[cm.GameOpsTimeout] = dc.GameOpsTimeout
 	dc.dmFuncMap[cm.GameStop] = dc.GameStop
+	dc.dmFuncMap[cm.GamePokerRemaining] = dc.GamePokerRemaining
 
 	return dc
 }
@@ -234,7 +252,7 @@ func (dc *DdzClient) Run() {
 		}
 		text = strings.ReplaceAll(text, "\r", "")
 		text = strings.ReplaceAll(text, "\n", "")
-		if match, _ := regexp.MatchString("^(\\w [\\w\\d]+)|(\\w+)$", text); !match {
+		if match, _ := regexp.MatchString("^(\\w [\\w\\d]+)|(\\w+ ?)$", text); !match {
 			dc.ShowMessage(cm.ClientLevel, "输入无效")
 			continue
 		}

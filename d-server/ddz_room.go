@@ -104,6 +104,7 @@ func newDdzRoom(client *Client, center *Center) BaseRoom {
 	ddzRoom.iFuncMap[cm.GameGrabLandlord] = ddzRoom.GameGrabLandlord
 	ddzRoom.iFuncMap[cm.GamePlayPoker] = ddzRoom.GamePlayPoker
 	ddzRoom.iFuncMap[cm.GamePlayPokerSkip] = ddzRoom.GamePlayPokerSkip
+	ddzRoom.iFuncMap[cm.GamePokerRemaining] = ddzRoom.GamePokerRemaining
 	ddzRoom.iFuncMap[cm.GameExe] = ddzRoom.GameExe
 
 	// 阶段方法
@@ -267,6 +268,15 @@ func (r *DdzRoom) GameGrabLandlord(msg DdzRoomMessage) {
 	r.waitUserOps = false
 }
 
+func (r *DdzRoom) GamePokerRemaining(msg DdzRoomMessage) {
+	var us []cm.UserPokerRemaining
+	for _, dc := range r.ddzClients {
+		us = append(us, cm.UserPokerRemaining{Name: dc.userName, Remaining: len(dc.PokerSlice)})
+	}
+	msg.client.messageChan <- ClientMessage{cm.GameLevel, cm.MessageType(cm.GamePokerRemaining),
+		true, cm.StructToJsonString(us)}
+}
+
 func (r *DdzRoom) GamePlayPokerSkip(msg DdzRoomMessage) {
 	// 广播消息
 	r.BroadcastL("", cm.MessageType(cm.GamePlayPokerSkip), cm.GameLevel)
@@ -317,7 +327,7 @@ func (r *DdzRoom) GamePlayPoker(msg DdzRoomMessage) {
 		if len(msg.client.PokerSlice) == 0 {
 			// 进入结算阶段
 			r.stage = cm.StageSettlement
-		} else if len(msg.client.PokerSlice) < 5 {
+		} else if len(msg.client.PokerSlice) <= 6 {
 			// 剩余手牌提示
 			upr := cm.UserPokerRemaining{Remaining: len(msg.client.PokerSlice), Name: msg.client.userName}
 			r.BroadcastL(cm.StructToJsonString(upr), cm.MessageType(cm.GamePlayPokerRemaining), cm.GameLevel)
