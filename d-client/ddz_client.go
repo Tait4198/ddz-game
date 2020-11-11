@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"com.github/gc-client/lang"
 	cm "com.github/gc-common"
 	"encoding/json"
 	"fmt"
@@ -23,6 +24,7 @@ type DdzClient struct {
 	mFuncMap  map[cm.MessageType]MessageFunc
 	dmFuncMap map[cm.DdzMessageType]MessageFunc
 	iFuncMap  map[string]CommandFunc
+	lang      lang.Lang
 
 	landlord   string
 	roundUser  string
@@ -44,16 +46,16 @@ func (dc *DdzClient) DcReset() {
 	dc.stage = cm.StageWait
 }
 
-func (*DdzClient) ShowMessage(level cm.MessageLevel, message string) {
+func (dc *DdzClient) ShowMessage(level cm.MessageLevel, message string) {
 	switch level {
 	case cm.CenterLevel:
-		log.Printf("[lobby message]%s", message)
+		log.Printf(dc.lang.Get(lang.LobbyMessage), message)
 	case cm.RoomLevel:
-		log.Printf("[room message]%s", message)
+		log.Printf(dc.lang.Get(lang.RoomMessage), message)
 	case cm.GameLevel:
-		log.Printf("[game message]%s", message)
+		log.Printf(dc.lang.Get(lang.GameMessage), message)
 	case cm.ClientLevel:
-		log.Printf("[client message]%s", message)
+		log.Printf(dc.lang.Get(lang.ClientMessage), message)
 	}
 }
 
@@ -122,7 +124,18 @@ func (dc *DdzClient) ShowSelfPoker() {
 	ShowPoker("手牌如下:", dc.pokerSlice, false, dc.simplify)
 }
 
-func NewDdzClient(usr, host string, port int, simplify bool) *DdzClient {
+func newLang(langStr string) lang.Lang {
+	switch langStr {
+	case "en":
+		log.Print("使用语言:英语")
+		return lang.NewEn()
+	default:
+		log.Print("使用语言:中文")
+		return lang.NewCn()
+	}
+}
+
+func NewDdzClient(usr, host string, port int, simplify bool, langStr string) *DdzClient {
 	dc := &DdzClient{
 		userName:  usr,
 		password:  "123456",
@@ -132,6 +145,7 @@ func NewDdzClient(usr, host string, port int, simplify bool) *DdzClient {
 		mFuncMap:  make(map[cm.MessageType]MessageFunc),
 		dmFuncMap: make(map[cm.DdzMessageType]MessageFunc),
 		iFuncMap:  make(map[string]CommandFunc),
+		lang:      newLang(langStr),
 	}
 	// 房间创建
 	dc.iFuncMap["c"] = dc.CreateRoom

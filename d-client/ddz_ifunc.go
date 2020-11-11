@@ -1,6 +1,7 @@
 package main
 
 import (
+	"com.github/gc-client/lang"
 	cm "com.github/gc-common"
 	"fmt"
 	"log"
@@ -28,7 +29,7 @@ func (dc *DdzClient) QuitRoom(val string) {
 			log.Fatal("QuitRoom error:", err)
 		}
 	} else {
-		dc.ShowMessage(cm.ClientLevel, "操作无效")
+		dc.ShowMessage(cm.ClientLevel, dc.lang.Get(lang.InvalidOperation))
 	}
 }
 
@@ -45,7 +46,7 @@ func (dc *DdzClient) ReadyOrCancelRoom(val string) {
 			log.Fatal("ReadyRoom error:", err)
 		}
 	} else {
-		dc.ShowMessage(cm.ClientLevel, "操作无效")
+		dc.ShowMessage(cm.ClientLevel, dc.lang.Get(lang.InvalidOperation))
 	}
 }
 
@@ -54,7 +55,7 @@ func (dc *DdzClient) YesCommand(val string) {
 	case cm.StageGrabLandlord:
 		GrabLandlord(dc, true)
 	case cm.StagePlayPoker:
-		dc.ShowMessage(cm.ClientLevel, "操作无效")
+		dc.ShowMessage(cm.ClientLevel, dc.lang.Get(lang.InvalidOperation))
 	default:
 		dc.ShowMessage(cm.ClientLevel, "还未轮到操作")
 	}
@@ -65,7 +66,7 @@ func (dc *DdzClient) NoCommand(val string) {
 	case cm.StageGrabLandlord:
 		GrabLandlord(dc, false)
 	case cm.StagePlayPoker:
-		dc.ShowMessage(cm.ClientLevel, "操作无效")
+		dc.ShowMessage(cm.ClientLevel, dc.lang.Get(lang.InvalidOperation))
 	default:
 		dc.ShowMessage(cm.ClientLevel, "还未轮到操作")
 	}
@@ -126,7 +127,7 @@ func (dc *DdzClient) PlayPoker(val string) {
 			dc.ShowMessage(cm.ClientLevel, "当前出牌未通过检测")
 		}
 	} else {
-		dc.ShowMessage(cm.ClientLevel, "操作无效")
+		dc.ShowMessage(cm.ClientLevel, dc.lang.Get(lang.InvalidOperation))
 	}
 }
 
