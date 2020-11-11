@@ -47,13 +47,13 @@ func (dc *DdzClient) DcReset() {
 func (*DdzClient) ShowMessage(level cm.MessageLevel, message string) {
 	switch level {
 	case cm.CenterLevel:
-		log.Printf("[大厅消息]%s", message)
+		log.Printf("[lobby message]%s", message)
 	case cm.RoomLevel:
-		log.Printf("[房间消息]%s", message)
+		log.Printf("[room message]%s", message)
 	case cm.GameLevel:
-		log.Printf("[对局消息]%s", message)
+		log.Printf("[game message]%s", message)
 	case cm.ClientLevel:
-		log.Printf("[客户端消息]%s", message)
+		log.Printf("[client message]%s", message)
 	}
 }
 
