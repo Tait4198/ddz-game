@@ -58,6 +58,8 @@ type DdzRoom struct {
 	ddzStart     bool
 	stageFuncMap map[cm.GameStage]DdzStageFunc
 	closeCode    string
+	// 允许在其他人回合执行的消息
+	wlMessageMap map[cm.DdzMessageType]byte
 
 	landlord    *DdzClient
 	roundClient *DdzClient
@@ -98,6 +100,7 @@ func newDdzRoom(client *Client, center *Center) BaseRoom {
 		BaseRoom:     newRoom(center),
 		iFuncMap:     make(map[cm.DdzMessageType]DdzRoomMessageFunc),
 		stageFuncMap: make(map[cm.GameStage]DdzStageFunc),
+		wlMessageMap: make(map[cm.DdzMessageType]byte),
 	}
 	ddzRoom.UpdateHomeowner(client)
 	// ddz实现
@@ -111,6 +114,9 @@ func newDdzRoom(client *Client, center *Center) BaseRoom {
 	ddzRoom.stageFuncMap[cm.StageGrabLandlord] = stageGrab
 	ddzRoom.stageFuncMap[cm.StagePlayPoker] = stagePlay
 	ddzRoom.stageFuncMap[cm.StageSettlement] = stageSettlement
+
+	// 剩余卡牌查看
+	ddzRoom.wlMessageMap[cm.GamePokerRemaining] = 0
 	return ddzRoom
 }
 
@@ -446,7 +452,7 @@ func (*DdzRoom) RoomSize() uint {
 }
 
 func (r *DdzRoom) GameMessage(msg RoomMessage) {
-	if r.IsRun() && r.roundClient.Client == msg.client {
+	if r.IsRun() && (r.roundClient.Client == msg.client || r.whitelist(msg)) {
 		drm := DdzRoomMessage{}
 		err := json.Unmarshal([]byte(msg.message), &drm)
 		if err == nil {
@@ -542,6 +548,16 @@ func (r *DdzRoom) RandomPokerSlice() []cm.Poker {
 func (r *DdzRoom) UpdateLandlord(dc *DdzClient) {
 	r.landlord = dc
 	r.BroadcastL(dc.userName, cm.MessageType(cm.GameNewLandlord), cm.GameLevel)
+}
+
+func (r *DdzRoom) whitelist(msg RoomMessage) bool {
+	drm := DdzRoomMessage{}
+	err := json.Unmarshal([]byte(msg.message), &drm)
+	if err != nil {
+		return false
+	}
+	_, ok := r.wlMessageMap[drm.MessageType]
+	return ok
 }
 
 func sliceRemove(slice []*DdzClient, s int) []*DdzClient {

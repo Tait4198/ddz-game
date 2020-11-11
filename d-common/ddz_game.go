@@ -233,7 +233,7 @@ func checkContThree(pkMap map[uint]uint, pks []Poker) DdzPokerResult {
 
 func checkAircraft(pkMap map[uint]uint, pks []Poker) DdzPokerResult {
 	pkLen := len(pks)
-	if pkLen%4 == 0 && pkLen >= 12 && pkLen <= 20 {
+	if pkLen%4 == 0 && pkLen >= 8 && pkLen <= 20 {
 		aSize := pkLen / 4
 		bSize := 0
 		var threeSl []int
