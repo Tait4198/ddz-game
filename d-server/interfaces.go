@@ -25,4 +25,5 @@ type BaseRoom interface {
 	ResetReady()
 	IsRun() bool
 	Run()
+	RoomChat(RoomMessage)
 }

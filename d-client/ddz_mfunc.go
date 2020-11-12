@@ -227,6 +227,10 @@ func (dc *DdzClient) GetAllRoomInfo(message ClientMessage) {
 	dc.ShowMessage(message.Level, roomInfoStr)
 }
 
+func (dc *DdzClient) GameChat(message ClientMessage) {
+	dc.ShowMessage(message.Level, message.Message)
+}
+
 func (dc *DdzClient) GamePokerRemaining(message ClientMessage) {
 	var us []gcm.UserPokerRemaining
 	if err := json.Unmarshal([]byte(message.Message), &us); err != nil {

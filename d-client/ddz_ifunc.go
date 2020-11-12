@@ -143,6 +143,7 @@ func (dc *DdzClient) ShowHelp(val string) {
 	var cmdHelpSl []string
 	cmdHelpSl = append(cmdHelpSl, "创建房间 -> c")
 	cmdHelpSl = append(cmdHelpSl, "退出房间 -> q")
+	cmdHelpSl = append(cmdHelpSl, "发送聊天 -> m 聊天内容 (大厅内发送全体可见/房间内发送仅房间内可见)")
 	cmdHelpSl = append(cmdHelpSl, "加入指定房间 -> j 房间数字id")
 	cmdHelpSl = append(cmdHelpSl, "房间内准备或取消 -> r")
 	cmdHelpSl = append(cmdHelpSl, "游戏内出牌 -> p 牌型对应数字或字母,如 p 334455 / p 90jqk (忽略大小写)")
@@ -156,6 +157,14 @@ func (dc *DdzClient) ShowHelp(val string) {
 		helpStr += fmt.Sprintf("%d. %s\n", i+1, s)
 	}
 	dc.ShowMessage(cm.ClientLevel, helpStr)
+}
+
+func (dc *DdzClient) SendChat(val string) {
+	// 房间内聊天
+	err := dc.conn.WriteJSON(SendMessage{cm.CenterLevel, cm.GameChat, val})
+	if err != nil {
+		log.Fatal("SendChat error:", err)
+	}
 }
 
 func (dc *DdzClient) ShowData(val string) {

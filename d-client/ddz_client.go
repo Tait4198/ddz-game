@@ -166,6 +166,8 @@ func NewDdzClient(usr, host string, port int, simplify bool, langStr string) *Dd
 	dc.iFuncMap["s"] = dc.ShowData
 	// 帮助
 	dc.iFuncMap["h"] = dc.ShowHelp
+	// 发送聊天
+	dc.iFuncMap["m"] = dc.SendChat
 
 	// 消息监听
 	dc.mFuncMap[cm.RoomCreate] = dc.RoomCreate
@@ -185,6 +187,7 @@ func NewDdzClient(usr, host string, port int, simplify bool, langStr string) *Dd
 	dc.mFuncMap[cm.RoomClose] = dc.RoomClose
 	dc.mFuncMap[cm.GetAllRoomInfo] = dc.GetAllRoomInfo
 	dc.mFuncMap[cm.GetCurRoomInfo] = dc.GetCurRoomInfo
+	dc.mFuncMap[cm.GameChat] = dc.GameChat
 
 	dc.dmFuncMap[cm.GameNewLandlord] = dc.GameNewLandlord
 	dc.dmFuncMap[cm.GameStart] = dc.GameStart
@@ -207,6 +210,8 @@ func NewDdzClient(usr, host string, port int, simplify bool, langStr string) *Dd
 	dc.dmFuncMap[cm.GamePlayPokerHostingOps] = dc.GamePlayPokerHostingOps
 	dc.dmFuncMap[cm.GameOpsTimeout] = dc.GameOpsTimeout
 	dc.dmFuncMap[cm.GameStop] = dc.GameStop
+	dc.dmFuncMap[cm.GamePokerRemaining] = dc.GamePokerRemaining
+	dc.dmFuncMap[cm.GamePokerRemaining] = dc.GamePokerRemaining
 	dc.dmFuncMap[cm.GamePokerRemaining] = dc.GamePokerRemaining
 
 	return dc
@@ -266,7 +271,7 @@ func (dc *DdzClient) Run() {
 		}
 		text = strings.ReplaceAll(text, "\r", "")
 		text = strings.ReplaceAll(text, "\n", "")
-		if match, _ := regexp.MatchString("^(\\w [\\w\\d]+)|(\\w+ ?)$", text); !match {
+		if match, _ := regexp.MatchString("^(\\w [\\w\\d]+)|(\\w+ ?)|(m .+)$", text); !match {
 			dc.ShowMessage(cm.ClientLevel, dc.lang.Get(lang.InvalidInput))
 			continue
 		}

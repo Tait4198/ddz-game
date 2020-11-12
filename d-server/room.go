@@ -160,6 +160,11 @@ func (r *Room) ResetReady() {
 	}
 }
 
+// 房间消息
+func (r *Room) RoomChat(msg RoomMessage) {
+	log.Println(msg.message)
+}
+
 func newRoom(center *Center) BaseRoom {
 	room := &Room{
 		id:             center.nextRoomId(),

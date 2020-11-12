@@ -61,6 +61,9 @@ func newCenter() *Center {
 	// 加入房间
 	center.funcMap[cm.RoomJoin] = center.roomJoin
 
+	// 聊天消息
+	center.funcMap[cm.GameChat] = center.gameChat
+
 	// 大厅运行监听客户端消息
 	go center.run()
 	return center
@@ -260,6 +263,24 @@ func (c *Center) getCurRoomInfo(msg ServerMessage) {
 		IsRun: curRoom.IsRun(), Clients: clients}
 	msg.client.messageChan <- ClientMessage{Level: cm.CenterLevel, Type: cm.GetCurRoomInfo,
 		Status: true, Message: cm.StructToJsonString(rr)}
+}
+
+func (c *Center) gameChat(msg ServerMessage) {
+	curRoom := msg.client.currentRoom
+	sendMsg := fmt.Sprintf("%s:%s", msg.client.userName, msg.message)
+	if curRoom == nil {
+		// 大厅广播
+		c.Broadcast(sendMsg, cm.GameChat)
+	} else {
+		// 房间广播
+		curRoom.BroadcastM(sendMsg, cm.GameChat)
+	}
+}
+
+func (c *Center) Broadcast(msg string, msgType cm.MessageType) {
+	for _, client := range c.clientMap {
+		client.messageChan <- ClientMessage{cm.CenterLevel, msgType, true, msg}
+	}
 }
 
 func (c *Center) nextRoomId() RoomId {

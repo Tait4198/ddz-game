@@ -29,4 +29,5 @@ const (
 	RoomNewHomeowner MessageType = 1116
 	GetAllRoomInfo   MessageType = 1200
 	GetCurRoomInfo   MessageType = 1201
+	GameChat         MessageType = 1202
 )
