@@ -121,13 +121,13 @@ func ShowPoker(title string, pks []cm.Poker, showIndex, simplify bool) {
 }
 
 func (dc *DdzClient) ShowSelfPoker() {
-	ShowPoker("手牌如下:", dc.pokerSlice, false, dc.simplify)
+	ShowPoker(dc.lang.Get(lang.Hand), dc.pokerSlice, false, dc.simplify)
 }
 
 func newLang(langStr string) lang.Lang {
 	switch langStr {
 	case "en":
-		log.Print("使用语言:英语")
+		log.Print("Language: English")
 		return lang.NewEn()
 	default:
 		log.Print("使用语言:中文")
@@ -224,9 +224,9 @@ func (dc *DdzClient) Run() {
 		log.Fatal("dial:", err)
 		return
 	} else {
-		dc.ShowMessage(cm.ClientLevel, fmt.Sprintf("已连接至服务器 %s:%d", dc.host, dc.port))
-		dc.ShowMessage(cm.CenterLevel, fmt.Sprintf("当前用户 %s", dc.userName))
-		dc.ShowMessage(cm.CenterLevel, "输入 h 查看帮助信息")
+		dc.ShowMessage(cm.ClientLevel, fmt.Sprintf(dc.lang.Get(lang.LinkSuccess), dc.host, dc.port))
+		dc.ShowMessage(cm.CenterLevel, fmt.Sprintf(dc.lang.Get(lang.CurrentUser), dc.userName))
+		dc.ShowMessage(cm.CenterLevel, dc.lang.Get(lang.HelpInfo))
 	}
 	dc.conn = c
 	defer dc.conn.Close()
@@ -267,7 +267,7 @@ func (dc *DdzClient) Run() {
 		text = strings.ReplaceAll(text, "\r", "")
 		text = strings.ReplaceAll(text, "\n", "")
 		if match, _ := regexp.MatchString("^(\\w [\\w\\d]+)|(\\w+ ?)$", text); !match {
-			dc.ShowMessage(cm.ClientLevel, "输入无效")
+			dc.ShowMessage(cm.ClientLevel, dc.lang.Get(lang.InvalidInput))
 			continue
 		}
 		arr := strings.Split(text, " ")
@@ -279,7 +279,7 @@ func (dc *DdzClient) Run() {
 				iFunc("")
 			}
 		} else {
-			dc.ShowMessage(cm.ClientLevel, "命令无效")
+			dc.ShowMessage(cm.ClientLevel, dc.lang.Get(lang.InvalidCommand))
 		}
 	}
 }
