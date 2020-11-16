@@ -1,13 +1,12 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"github.com/gorilla/websocket"
 	"log"
 	"net/http"
 )
-
-// todo tap联想
 
 var upgrade = websocket.Upgrader{
 	ReadBufferSize:  1024,
@@ -27,6 +26,12 @@ func urlParam(key string, r *http.Request) (string, error) {
 }
 
 func main() {
+	port := 8080
+	flag.IntVar(&port, "port", 8080, "服务器端口")
+	flag.Parse()
+
+	log.Printf("使用[%d]端口启动服务", port)
+
 	center := newCenter()
 
 	http.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
@@ -52,8 +57,8 @@ func main() {
 		}
 		newClient(usr, clientId, center, conn)
 	})
-	err := http.ListenAndServe(":8080", nil)
-	if err != nil {
+	err := http.ListenAndServe(fmt.Sprintf(":%d", port), nil)
+	if err == nil {
 		log.Println(err)
 	}
 }

@@ -14,7 +14,7 @@ func main() {
 	required := []string{"n"}
 
 	flag.StringVar(&name, "n", "ddz", "连接用户名")
-	flag.StringVar(&simplify, "simplify", "true", "简化显示")
+	flag.StringVar(&simplify, "simplify", "false", "简化显示")
 	flag.StringVar(&lang, "lang", "zh", "语言")
 	flag.StringVar(&host, "host", "localhost", "服务器地址")
 	flag.IntVar(&port, "port", 8080, "服务器端口")
