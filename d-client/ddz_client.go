@@ -279,7 +279,15 @@ func (dc *DdzClient) Run() {
 
 		if iFunc, ok := dc.iFuncMap[arr[0]]; ok {
 			if len(arr) > 1 {
-				iFunc(arr[1])
+				if len(arr) == 2 {
+					iFunc(arr[1])
+				} else {
+					val := arr[1]
+					for i := 2; i < len(arr); i++ {
+						val += " " + arr[i]
+					}
+					iFunc(val)
+				}
 			} else {
 				iFunc("")
 			}
