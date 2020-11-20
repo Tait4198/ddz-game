@@ -149,11 +149,13 @@ func GetPkMap(pks []Poker) map[uint]uint {
 }
 
 func checkThreeWithTwo(pkMap map[uint]uint, pks []Poker) DdzPokerResult {
-	pkMapLen := len(pkMap)
-	if pkMapLen == 2 {
-		for k, v := range pkMap {
-			if v == 3 {
-				return DdzPokerResult{ThreeWithTwo, k, 1}
+	if len(pks) == 5 {
+		pkMapLen := len(pkMap)
+		if pkMapLen == 2 {
+			for k, v := range pkMap {
+				if v == 3 {
+					return DdzPokerResult{ThreeWithTwo, k, 1}
+				}
 			}
 		}
 	}
@@ -161,12 +163,14 @@ func checkThreeWithTwo(pkMap map[uint]uint, pks []Poker) DdzPokerResult {
 }
 
 func checkFourWithTwo(pkMap map[uint]uint, pks []Poker) DdzPokerResult {
-	pkMapLen := len(pkMap)
-	// AAAABC / AAAABB
-	if pkMapLen == 2 || pkMapLen == 3 {
-		for k, v := range pkMap {
-			if v == 4 {
-				return DdzPokerResult{FourWithTwo, k, 1}
+	if len(pks) == 6 {
+		pkMapLen := len(pkMap)
+		// AAAABC / AAAABB
+		if pkMapLen == 2 || pkMapLen == 3 {
+			for k, v := range pkMap {
+				if v == 4 {
+					return DdzPokerResult{FourWithTwo, k, 1}
+				}
 			}
 		}
 	}
@@ -233,8 +237,15 @@ func checkContThree(pkMap map[uint]uint, pks []Poker) DdzPokerResult {
 
 func checkAircraft(pkMap map[uint]uint, pks []Poker) DdzPokerResult {
 	pkLen := len(pks)
-	if pkLen%4 == 0 && pkLen >= 8 && pkLen <= 20 {
-		aSize := pkLen / 4
+	// 4 -> AAAX
+	// 5 -> AAAXX
+	if (pkLen%4 == 0 || pkLen%5 == 0) && pkLen >= 8 && pkLen <= 20 {
+		var aSize int
+		if pkLen%4 == 0 {
+			aSize = pkLen / 4
+		} else {
+			aSize = pkLen / 5
+		}
 		bSize := 0
 		var threeSl []int
 		for k, v := range pkMap {
