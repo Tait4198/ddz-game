@@ -60,4 +60,6 @@ const (
 	AllRoomInfo
 	UserCardRemain
 	CardNum
+	Landlord
+	Farmer
 )

@@ -275,9 +275,9 @@ func (r *DdzRoom) GameGrabLandlord(msg DdzRoomMessage) {
 }
 
 func (r *DdzRoom) GamePokerRemaining(msg DdzRoomMessage) {
-	var us []cm.UserPokerRemaining
+	var us []cm.UserPlayInfo
 	for _, dc := range r.ddzClients {
-		us = append(us, cm.UserPokerRemaining{Name: dc.userName, Remaining: len(dc.PokerSlice)})
+		us = append(us, cm.UserPlayInfo{Name: dc.userName, Remaining: len(dc.PokerSlice)})
 	}
 	msg.client.messageChan <- ClientMessage{cm.GameLevel, cm.MessageType(cm.GamePokerRemaining),
 		true, cm.StructToJsonString(us)}
@@ -328,15 +328,11 @@ func (r *DdzRoom) GamePlayPoker(msg DdzRoomMessage) {
 		msg.client.messageChan <- ClientMessage{cm.GameLevel, cm.MessageType(cm.GamePlayPokerUpdate),
 			true, cm.StructToJsonString(msg.client.PokerSlice)}
 		// 广播出牌
-		upp := cm.UserPlayPoker{Pokers: playPks, Name: msg.client.userName}
+		upp := cm.UserPlayInfo{Pokers: playPks, Name: msg.client.userName, Remaining: len(msg.client.PokerSlice)}
 		r.BroadcastL(cm.StructToJsonString(upp), cm.MessageType(cm.GamePlayPoker), cm.GameLevel)
 		if len(msg.client.PokerSlice) == 0 {
 			// 进入结算阶段
 			r.stage = cm.StageSettlement
-		} else if len(msg.client.PokerSlice) <= 6 {
-			// 剩余手牌提示
-			upr := cm.UserPokerRemaining{Remaining: len(msg.client.PokerSlice), Name: msg.client.userName}
-			r.BroadcastL(cm.StructToJsonString(upr), cm.MessageType(cm.GamePlayPokerRemaining), cm.GameLevel)
 		}
 		// 等待结束
 		r.waitUserOps = false

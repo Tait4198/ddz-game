@@ -48,7 +48,7 @@ func NewEn() Lang {
 	lang.langMap[NotSeizeLandlord] = "user [%s] didn't seize landlord"
 	lang.langMap[LandlordUser] = "*** landlord user: [%s] ***"
 	lang.langMap[HoleCard] = "hole card: "
-	lang.langMap[TurnToDiscard] = "*** turn [%s] to discard ***"
+	lang.langMap[TurnToDiscard] = "***[%s]-[%s] discard (%d cards remain)***"
 	lang.langMap[SkipToDiscard] = "[%s] skip discarding"
 	lang.langMap[AttentionRemain] = "*** Attention! user[%s] %d card remain ***"
 	lang.langMap[UserWin] = "*** user [%s] win ***"
@@ -61,6 +61,8 @@ func NewEn() Lang {
 	lang.langMap[AllRoomInfo] = "all room info \n"
 	lang.langMap[UserCardRemain] = "users card remain \n"
 	lang.langMap[CardNum] = "user[%s] %d "
+	lang.langMap[Landlord] = "Landlord"
+	lang.langMap[Farmer] = "Farmer"
 	return lang
 }
 

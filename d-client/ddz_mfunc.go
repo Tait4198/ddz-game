@@ -159,14 +159,19 @@ func (dc *DdzClient) GameDealHolePokers(cm ClientMessage) {
 }
 
 func (dc *DdzClient) GamePlayPoker(cm ClientMessage) {
-	var upp gcm.UserPlayPoker
+	var upp gcm.UserPlayInfo
 	if err := json.Unmarshal([]byte(cm.Message), &upp); err != nil {
 		panic(err)
 	}
 	gcm.SortPoker(upp.Pokers, gcm.SortByScore)
 	dc.prevPoker = upp.Pokers
 	dc.lastPlay = upp.Name
-	ShowPoker(fmt.Sprintf(dc.lang.Get(lang.TurnToDiscard), upp.Name), upp.Pokers, false, dc.simplify)
+	identity := dc.lang.Get(lang.Farmer)
+	if upp.Name == dc.landlord {
+		identity = dc.lang.Get(lang.Landlord)
+	}
+	ShowPoker(fmt.Sprintf(dc.lang.Get(lang.TurnToDiscard), identity, upp.Name, upp.Remaining),
+		upp.Pokers, false, dc.simplify)
 }
 
 func (dc *DdzClient) GamePlayPokerUpdate(cm ClientMessage) {
@@ -178,7 +183,7 @@ func (dc *DdzClient) GamePlayPokerSkip(cm ClientMessage) {
 }
 
 func (dc *DdzClient) GamePlayPokerRemaining(cm ClientMessage) {
-	var upr gcm.UserPokerRemaining
+	var upr gcm.UserPlayInfo
 	if err := json.Unmarshal([]byte(cm.Message), &upr); err != nil {
 		panic(err)
 	}
@@ -232,7 +237,7 @@ func (dc *DdzClient) GameChat(message ClientMessage) {
 }
 
 func (dc *DdzClient) GamePokerRemaining(message ClientMessage) {
-	var us []gcm.UserPokerRemaining
+	var us []gcm.UserPlayInfo
 	if err := json.Unmarshal([]byte(message.Message), &us); err != nil {
 		panic(err)
 	}

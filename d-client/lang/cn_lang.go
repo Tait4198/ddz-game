@@ -48,7 +48,7 @@ func NewCn() Lang {
 	lang.langMap[NotSeizeLandlord] = "用户[%s]不抢地主"
 	lang.langMap[LandlordUser] = "***地主用户[%s]***"
 	lang.langMap[HoleCard] = "底牌:"
-	lang.langMap[TurnToDiscard] = "***[%s]出牌***"
+	lang.langMap[TurnToDiscard] = "***[%s]-[%s] 出牌 (剩余%d张)***"
 	lang.langMap[SkipToDiscard] = "[%s]跳过出牌"
 	lang.langMap[AttentionRemain] = "***注意[%s]还剩%d张手牌***"
 	lang.langMap[UserWin] = "***注意[%s]还剩%d张手牌***"
@@ -61,6 +61,8 @@ func NewCn() Lang {
 	lang.langMap[AllRoomInfo] = "所有房间信息\n"
 	lang.langMap[UserCardRemain] = "用户剩余卡牌\n"
 	lang.langMap[CardNum] = "%s[%d]张 "
+	lang.langMap[Landlord] = "地主"
+	lang.langMap[Farmer] = "农民"
 	return lang
 }
 
