@@ -192,7 +192,7 @@ func (dc *DdzClient) GamePlayPokerRemaining(cm ClientMessage) {
 
 func (dc *DdzClient) GameSettlement(cm ClientMessage) {
 	dc.stage = gcm.StageSettlement
-	dc.ShowMessage(cm.Level, fmt.Sprintf(dc.lang.Get(lang.UserWin), cm.Message))
+	//dc.ShowMessage(cm.Level, fmt.Sprintf(dc.lang.Get(lang.UserWin), cm.Message))
 	dc.ShowMessage(cm.Level, fmt.Sprintf(dc.lang.Get(lang.WinnerLandlord), dc.roundUser))
 }
 
